@@ -68,6 +68,15 @@ def get_users():
 @swag_from({
     'tags': ['User'],
     'description': 'Get user by ID',
+    'parameters': [
+        {
+            'name': 'user_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True,
+            'description': 'ID of the user to retrieve'
+        }
+    ],
     'responses': {
         200: {'description': 'User found'},
         404: {'description': 'User not found'}

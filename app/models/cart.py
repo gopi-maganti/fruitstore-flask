@@ -7,6 +7,7 @@ class Cart(db.Model):
     fruit_id = db.Column(db.Integer, db.ForeignKey('fruit.fruit_id'), nullable=False)
     info_id = db.Column(db.Integer, db.ForeignKey('fruit_info.info_id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
+    item_price = db.Column(db.Float, nullable=True)
     added_date = db.Column(db.DateTime, default=db.func.current_timestamp())
     
     user = db.relationship('User', backref='cart')
@@ -25,7 +26,7 @@ class Cart(db.Model):
             'cart_id': self.cart_id,
             'user_id': self.user_id,
             'fruit_id': self.fruit_id,
-            'info_id': self.info_id,
             'quantity': self.quantity,
+            'item_price': self.item_price,
             'added_date': self.added_date.isoformat() if self.added_date else None
         }

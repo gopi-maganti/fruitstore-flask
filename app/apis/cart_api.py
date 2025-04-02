@@ -67,6 +67,7 @@ def add_to_cart():
             fruit_id=data['fruit_id'],
             info_id=data['info_id'],
             quantity=data['quantity'],
+            item_price=data['quantity']*price
         )
 
         cart_item.save()
@@ -82,6 +83,15 @@ def add_to_cart():
 @swag_from({
     'tags': ['Cart'],
     'description': 'Get all cart items for a user',
+    'parameters': [
+        {
+            'name': 'user_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True,
+            'description': 'ID of the user to retrieve'
+        }
+    ],
     'responses': {
         200: {'description': 'List of cart items'},
         404: {'description': 'No cart items found for the user'}
@@ -132,6 +142,15 @@ def update_cart_item(cart_id):
 @swag_from({
     'tags': ['Cart'],
     'description': 'Delete a specific cart item',
+    'parameters': [
+        {
+            'name': 'cart_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True,
+            'description': 'ID of the cart to delete'
+        }
+    ],
     'responses': {
         200: {'description': 'Cart item deleted'},
         404: {'description': 'Cart item not found'}
@@ -151,6 +170,15 @@ def delete_cart_item(cart_id):
 @swag_from({
     'tags': ['Cart'],
     'description': 'Clear all items from a user\'s cart',
+    'parameters': [
+        {
+            'name': 'user_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True,
+            'description': 'ID of the user to delete'
+        }
+    ],
     'responses': {
         200: {'description': 'All cart items deleted'},
         404: {'description': 'No cart items found'}

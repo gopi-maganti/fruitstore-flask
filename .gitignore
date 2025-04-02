@@ -1,7 +1,50 @@
-./__pycache__
-./.venv
-./.vscode
-./app/__pycache__
-./app/models/__pycache_
-./app/apis/__pycache_
-./instance
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# VSCode settings
+.vscode/
+
+# Flask instance folder
+instance/
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+*.py,cover
+
+# Test result files
+nosetests.xml
+test-results.xml
+junit-*.xml
+
+# Migrations (optional if using Flask-Migrate)
+migrations/
+
+# SQLite or other local DBs
+*.sqlite3
+*.db
+
+# IDE specific
+*.idea/
+
+# Log files
+*.log
+logs/
+*.out
+
+# Specific app-level cache dirs
+/app/__pycache__/
+/app/models/__pycache__/
+/app/apis/__pycache__/
