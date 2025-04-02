@@ -19,3 +19,13 @@ class Cart(db.Model):
     
     def __repr__(self):
         return f"<Cart {self.cart_id}, User: {self.user_id}, Fruit: {self.fruit_id}, Quantity: {self.quantity}>"
+    
+    def as_dict(self):
+        return {
+            'cart_id': self.cart_id,
+            'user_id': self.user_id,
+            'fruit_id': self.fruit_id,
+            'info_id': self.info_id,
+            'quantity': self.quantity,
+            'added_date': self.added_date.isoformat() if self.added_date else None
+        }

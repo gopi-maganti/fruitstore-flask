@@ -61,7 +61,7 @@ class FruitInfo(db.Model):
             fruit_id=self.fruit_id,
             weight=self.weight,
             price=self.price,
-            quantity=self.quantity,
+            total_quantity=self.total_quantity,
             sell_by_date=self.sell_by_date
         ).first() is not None
     
@@ -72,4 +72,4 @@ class FruitInfo(db.Model):
         db.session.commit()
 
     def __repr__(self):
-        return f"<FruitInfo {self.fruit_id}, Weight: {self.weight}, Price: {self.price}, Quantity: {self.quantity}>"
+        return f"<FruitInfo {self.fruit_id}, Weight: {self.weight}, Price: {self.price}, Quantity: {self.total_quantity}>"

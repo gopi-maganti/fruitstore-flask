@@ -1,0 +1,7 @@
+./__pycache__
+./.venv
+./.vscode
+./app/__pycache__
+./app/models/__pycache_
+./app/apis/__pycache_
+./instance

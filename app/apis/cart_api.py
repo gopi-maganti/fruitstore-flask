@@ -23,8 +23,7 @@ cart_bp = Blueprint('cart_bp', __name__)
                     'user_id': {'type': 'integer'},
                     'fruit_id': {'type': 'integer'},
                     'info_id': {'type': 'integer'},
-                    'quantity': {'type': 'integer'},
-                    'is_seeded': {'type': 'boolean'}
+                    'quantity': {'type': 'integer'}
                 },
                 'required': ['user_id', 'fruit_id', 'info_id', 'quantity']
             }
@@ -68,8 +67,6 @@ def add_to_cart():
             fruit_id=data['fruit_id'],
             info_id=data['info_id'],
             quantity=data['quantity'],
-            is_seeded=data.get('is_seeded', False),
-            price_by_fruit=price
         )
 
         cart_item.save()
