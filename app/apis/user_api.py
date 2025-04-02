@@ -17,12 +17,11 @@ user_bp = Blueprint('user_bp', __name__)
             'schema': {
                 'type': 'object',
                 'properties': {
-                    'user_id': {'type': 'integer'},
                     'name': {'type': 'string'},
                     'email': {'type': 'string'},
                     'phone_number': {'type': 'string'}
                 },
-                'required': ['user_id', 'name', 'email']
+                'required': ['name', 'email', 'phone_number']
             }
         }
     ],
@@ -37,13 +36,12 @@ def add_user():
 
     try:
         user = User(
-            user_id=data['user_id'],
             name=data['name'],
             email=data['email'],
             phone_number=data.get('phone_number')
         )
         user.save()
-        return jsonify({'message': 'User added successfully'}), 201
+        return jsonify({'message': f'User added successfully with USER ID: {user.user_id}'}), 201
 
     except ValueError as ve:
         return jsonify({'error': str(ve)}), 400

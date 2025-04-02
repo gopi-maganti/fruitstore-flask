@@ -23,13 +23,6 @@ class Fruit(db.Model):
             filters['description'] = self.description
 
         return Fruit.query.filter_by(**filters).first() is not None
-
-
-    def save(self):
-        if self.exists():
-            raise ValueError("Fruit with these details already exists. If you want to update, use the update button.")
-        db.session.add(self)
-        db.session.commit()
     
     def to_dict(self):
         return {
@@ -50,7 +43,7 @@ class FruitInfo(db.Model):
     weight = db.Column(db.Float, nullable=False)
     price = db.Column(db.Float, nullable=False)
     total_quantity = db.Column(db.Integer, nullable=False)
-    available_quantity = db.Column(db.Integer, nullable=False)
+    available_quantity = db.Column(db.Integer, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     sell_by_date = db.Column(db.DateTime, nullable=False)
     
@@ -64,12 +57,6 @@ class FruitInfo(db.Model):
             total_quantity=self.total_quantity,
             sell_by_date=self.sell_by_date
         ).first() is not None
-    
-    def save(self):
-        if self.exists():
-            raise ValueError("Fruit info with these details already exists. If you want to update, use the update button.")
-        db.session.add(self)
-        db.session.commit()
 
     def __repr__(self):
         return f"<FruitInfo {self.fruit_id}, Weight: {self.weight}, Price: {self.price}, Quantity: {self.total_quantity}>"

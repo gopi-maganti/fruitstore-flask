@@ -29,11 +29,10 @@ fruit_bp = Blueprint('fruit_bp', __name__)
                     'weight': {'type': 'number'},
                     'price': {'type': 'number'},
                     'total_quantity': {'type': 'integer'},
-                    'available_quantity' : {'type' : 'integer'},
                     'sell_by_date': {'type': 'string', 'format': 'date-time'}
                 },
-                'required': ['name', 'color', 'size', 'image_url', 
-                             'weight', 'price', 'total_quantity', 
+                'required': ['name', 'color', 'size', 'image_url',
+                             'weight', 'price', 'total_quantity',
                              'sell_by_date']
             }
         }
@@ -62,8 +61,8 @@ def add_fruit_with_info():
     fruit_fields = ['name', 'description', 'color', 'size', 'image_url', 'has_seeds']
     info_fields = ['weight', 'price', 'total_quantity', 'sell_by_date']
 
-    missing_fruit = [f for f in fruit_fields if f not in data or not data[f]]
-    missing_info = [f for f in info_fields if f not in data or not data[f]]
+    missing_fruit = [f for f in fruit_fields if f not in data or (data[f] is (None or "") and f != 'description')]
+    missing_info = [f for f in info_fields if f not in data or data[f] is None]
 
     if missing_fruit or missing_info:
         return jsonify({
@@ -79,18 +78,28 @@ def add_fruit_with_info():
             size=data['size'],
             image_url=data['image_url']
         )
-        fruit.save()
+
+        if fruit.exists():
+            raise ValueError("Fruit with these details already exists. If you want to update, use the update button.")
+
+        db.session.add(fruit)
+        db.session.flush()
 
         fruit_info = FruitInfo(
             fruit_id=fruit.fruit_id,
             weight=data['weight'],
             price=data['price'],
             total_quantity=data['total_quantity'],
-            available_quantity=data['total_quantity'],  # Set available = total when new
+            available_quantity=data.get('available_quantity', data['total_quantity']),
             created_at=datetime.utcnow(),
             sell_by_date=datetime.strptime(data['sell_by_date'], '%Y-%m-%dT%H:%M:%S')
         )
-        fruit_info.save()
+
+        if fruit_info.exists():
+            raise ValueError("Fruit info with these details already exists. If you want to update, use the update button.")
+
+        db.session.add(fruit_info)
+        db.session.commit()
 
         return jsonify({
             'message': 'Fruit and FruitInfo added successfully',
@@ -99,11 +108,13 @@ def add_fruit_with_info():
         }), 201
 
     except ValueError as ve:
+        db.session.rollback()
         return jsonify({'error': str(ve)}), 400
 
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
+
 
 # Get all fruits and their information
 @fruit_bp.route('/', methods=['GET'])
@@ -125,6 +136,7 @@ def add_fruit_with_info():
                         'size': {'type': 'string'},
                         'image_url': {'type': 'string'},
                         'has_seeds': {'type': 'boolean'},
+                        'info_id': {'type': 'integer'},
                         'weight': {'type': 'number'},
                         'price': {'type': 'number'},
                         'total_quantity': {'type': 'integer'},
@@ -154,9 +166,11 @@ def get_all_fruits():
                 'size': fruit.size,
                 'image_url': fruit.image_url,
                 'has_seeds': fruit.has_seeds,
+                'info_id':info.info_id,
                 'weight': info.weight,
                 'price': info.price,
                 'total_quantity': info.total_quantity,
+                'available_quantity': info.available_quantity,
                 'sell_by_date': info.sell_by_date.isoformat()
             })
 
@@ -188,6 +202,7 @@ def get_all_fruits():
                     'size': {'type': 'string'},
                     'image_url': {'type': 'string'},
                     'has_seeds': {'type': 'boolean'},
+                    'info_id': {'type': 'integer'},
                     'weight': {'type': 'number'},
                     'price': {'type': 'number'},
                     'total_quantity': {'type': 'integer'},
@@ -220,6 +235,7 @@ def get_fruit_by_id(fruit_id):
         'size': fruit.size,
         'image_url': fruit.image_url,
         'has_seeds': fruit.has_seeds,
+        'info_id': fruit_info.info_id,
         'weight': fruit_info.weight,
         'price': fruit_info.price,
         'total_quantity': fruit_info.total_quantity,
@@ -278,9 +294,10 @@ def update_fruit_info(fruit_id):
         return jsonify({'error': 'Fruit info not found'}), 404
 
     if 'total_quantity' in data:
-        added_quantity = data['total_quantity']
-        fruit_info.available_quantity += added_quantity
-        fruit_info.total_quantity += added_quantity
+        fruit_info.total_quantity = data['total_quantity']
+        # Optionally update available_quantity too (only if explicitly provided)
+        if 'available_quantity' in data:
+            fruit_info.available_quantity = data['available_quantity']
 
     # Then continue updating other fields if any (weight, price, sell_by_date)
     for key, value in data.items():
