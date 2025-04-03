@@ -1,10 +1,12 @@
 from flask import Blueprint, request, jsonify
 from flasgger import swag_from
+from pydantic import ValidationError
 
 from app import db
 from app.models.cart import Cart
 from app.models.fruit import FruitInfo
 from app.models.users import User
+from app.schemas.cart_validation import CartAddValidation, CartUpdateValidation
 
 cart_bp = Blueprint('cart_bp', __name__)
 
@@ -22,10 +24,9 @@ cart_bp = Blueprint('cart_bp', __name__)
                 'properties': {
                     'user_id': {'type': 'integer'},
                     'fruit_id': {'type': 'integer'},
-                    'info_id': {'type': 'integer'},
                     'quantity': {'type': 'integer'}
                 },
-                'required': ['user_id', 'fruit_id', 'info_id', 'quantity']
+                'required': ['user_id', 'fruit_id', 'quantity']
             }
         }
     ],
@@ -45,34 +46,34 @@ cart_bp = Blueprint('cart_bp', __name__)
     }
 })
 def add_to_cart():
-    data = request.get_json()
-
     try:
+        data = request.get_json()
+        validated_data = CartAddValidation(**data)
 
-        # Validate user
-        user = User.query.get(data['user_id'])
+        user = User.query.get(validated_data.user_id)
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
-        # Validate fruit info
-        fruit_info = FruitInfo.query.get(data['info_id'])
+        fruit_info = FruitInfo.query.filter_by(fruit_id=validated_data.fruit_id).first()
         if not fruit_info:
-            return jsonify({'error': 'FruitInfo not found'}), 404
+            return jsonify({'error': 'FruitInfo not found for this fruit'}), 404
 
-        # Assume price per fruit from FruitInfo
-        price = fruit_info.price
+        if validated_data.cart_ids and len(validated_data.cart_ids) > 50:
+            return jsonify({'error': 'Cannot process more than 50 cart items at once'}), 400
 
         cart_item = Cart(
-            user_id=data['user_id'],
-            fruit_id=data['fruit_id'],
-            info_id=data['info_id'],
-            quantity=data['quantity'],
-            item_price=data['quantity']*price
+            user_id=validated_data.user_id,
+            fruit_id=validated_data.fruit_id,
+            info_id=fruit_info.info_id,
+            quantity=validated_data.quantity,
+            item_price=validated_data.quantity * fruit_info.price
         )
 
         cart_item.save()
-
         return jsonify({'message': 'Item added to cart successfully', 'cart': cart_item.as_dict()}), 201
+
+    except ValidationError as ve:
+        return jsonify({'error': 'Validation Error', 'details': ve.errors()}), 400
 
     except Exception as e:
         db.session.rollback()
@@ -104,11 +105,19 @@ def get_cart_items(user_id):
 
     return jsonify([item.as_dict() for item in cart_items]), 200
 
+#Update Cart Items
 @cart_bp.route('/update/<int:cart_id>', methods=['PUT'])
 @swag_from({
     'tags': ['Cart'],
     'description': 'Update quantity of a cart item',
     'parameters': [
+        {
+            'name': 'cart_id',
+            'in': 'path',
+            'type': 'integer',
+            'required': True,
+            'description': 'Cart ID to update'
+        },
         {
             'name': 'body',
             'in': 'body',
@@ -128,16 +137,26 @@ def get_cart_items(user_id):
     }
 })
 def update_cart_item(cart_id):
-    data = request.get_json()
-    cart_item = Cart.query.get(cart_id)
+    try:
+        data = request.get_json()
+        validated_data = CartUpdateValidation(**data)
 
-    if not cart_item:
-        return jsonify({'error': 'Cart item not found'}), 404
+        cart_item = Cart.query.get(cart_id)
+        if not cart_item:
+            return jsonify({'error': 'Cart item not found'}), 404
 
-    cart_item.quantity = data['quantity']
-    db.session.commit()
-    return jsonify({'message': 'Cart item updated successfully', 'cart': cart_item.as_dict()}), 200
+        cart_item.quantity = validated_data.quantity
 
+        if cart_item.fruit_info and cart_item.fruit_info.price:
+            cart_item.item_price = cart_item.quantity * cart_item.fruit_info.price
+
+        db.session.commit()
+        return jsonify({'message': 'Cart item updated successfully', 'cart': cart_item.as_dict()}), 200
+
+    except ValidationError as ve:
+        return jsonify({'error': 'Validation Error', 'details': ve.errors()}), 400
+    
+#Delete Cart Items by Cart_ID
 @cart_bp.route('/delete/<int:cart_id>', methods=['DELETE'])
 @swag_from({
     'tags': ['Cart'],

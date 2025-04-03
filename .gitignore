@@ -48,3 +48,4 @@ logs/
 /app/__pycache__/
 /app/models/__pycache__/
 /app/apis/__pycache__/
+/app/models/__pycache__/

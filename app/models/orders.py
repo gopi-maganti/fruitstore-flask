@@ -2,9 +2,20 @@ from app import db
 from app.models.fruit import Fruit, FruitInfo
 from app.models.users import User
 
+class ParentOrder(db.Model):
+    __tablename__ = 'parent_orders'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
+    order_date = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    user = db.relationship('User', backref='parent_orders')
+    items = db.relationship('Order', backref='parent_order', lazy=True)
+
+
 class Order(db.Model):
     __tablename__ = 'orders'
     order_id = db.Column(db.Integer, primary_key=True)
+    parent_order_id = db.Column(db.Integer, db.ForeignKey('parent_orders.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
     fruit_id = db.Column(db.Integer, db.ForeignKey('fruit.fruit_id'), nullable=False)
     info_id = db.Column(db.Integer, db.ForeignKey('fruit_info.info_id'), nullable=False)

@@ -2,7 +2,10 @@ from flask import Blueprint, request, jsonify
 from flasgger import swag_from
 from datetime import datetime
 
+from pydantic import ValidationError
+
 from app.models.fruit import Fruit, FruitInfo
+from app.schemas.fruit_validation import FruitValidation
 from app import db
 
 fruit_bp = Blueprint('fruit_bp', __name__)
@@ -55,28 +58,17 @@ fruit_bp = Blueprint('fruit_bp', __name__)
     }
 })
 def add_fruit_with_info():
-    data = request.get_json()
-
-    # Split fruit and info fields
-    fruit_fields = ['name', 'description', 'color', 'size', 'image_url', 'has_seeds']
-    info_fields = ['weight', 'price', 'total_quantity', 'sell_by_date']
-
-    missing_fruit = [f for f in fruit_fields if f not in data or (data[f] is (None or "") and f != 'description')]
-    missing_info = [f for f in info_fields if f not in data or data[f] is None]
-
-    if missing_fruit or missing_info:
-        return jsonify({
-            'error': f'Missing fields: {", ".join(missing_fruit + missing_info)}'
-        }), 400
-
     try:
+        data = request.get_json()
+        validated_data = FruitValidation(**data)
+
         fruit = Fruit(
-            name=data['name'],
-            color=data['color'],
-            description=data.get('description'),
-            has_seeds=data.get('has_seeds', False),
-            size=data['size'],
-            image_url=data['image_url']
+            name=validated_data.name,
+            color=validated_data.color,
+            description=validated_data.description,
+            has_seeds=validated_data.has_seeds,
+            size=validated_data.size,
+            image_url=validated_data.image_url
         )
 
         if fruit.exists():
@@ -87,12 +79,12 @@ def add_fruit_with_info():
 
         fruit_info = FruitInfo(
             fruit_id=fruit.fruit_id,
-            weight=data['weight'],
-            price=data['price'],
-            total_quantity=data['total_quantity'],
-            available_quantity=data.get('available_quantity', data['total_quantity']),
+            weight=validated_data.weight,
+            price=validated_data.price,
+            total_quantity=validated_data.total_quantity,
+            available_quantity=validated_data.available_quantity or validated_data.total_quantity,
             created_at=datetime.utcnow(),
-            sell_by_date=datetime.strptime(data['sell_by_date'], '%Y-%m-%dT%H:%M:%S')
+            sell_by_date=validated_data.sell_by_date
         )
 
         if fruit_info.exists():
@@ -107,6 +99,9 @@ def add_fruit_with_info():
             'fruit_info_id': fruit_info.info_id
         }), 201
 
+    except ValidationError as ve:
+        return jsonify({'error': 'Validation Error', 'details': ve.errors()}), 400
+
     except ValueError as ve:
         db.session.rollback()
         return jsonify({'error': str(ve)}), 400
@@ -114,7 +109,6 @@ def add_fruit_with_info():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
-
 
 # Get all fruits and their information
 @fruit_bp.route('/', methods=['GET'])
@@ -302,6 +296,8 @@ def update_fruit_info(fruit_id):
     # Then continue updating other fields if any (weight, price, sell_by_date)
     for key, value in data.items():
         if key != 'available_quantity' and hasattr(fruit_info, key):
+            if key == 'sell_by_date' and isinstance(value, str):
+                value = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S')
             setattr(fruit_info, key, value)
 
     db.session.commit()

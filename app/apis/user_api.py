@@ -1,5 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flasgger import swag_from
+from pydantic import ValidationError
+
+from app.schemas.user_validation import UserValidation
 from app.models.users import User
 from app import db
 
@@ -32,19 +35,29 @@ user_bp = Blueprint('user_bp', __name__)
     }
 })
 def add_user():
-    data = request.get_json()
-
     try:
+        data = request.get_json()
+        validated_data = UserValidation(**data)
+
         user = User(
-            name=data['name'],
-            email=data['email'],
-            phone_number=data.get('phone_number')
+            name=validated_data.name,
+            email=validated_data.email,
+            phone_number=validated_data.phone_number
         )
         user.save()
         return jsonify({'message': f'User added successfully with USER ID: {user.user_id}'}), 201
 
-    except ValueError as ve:
-        return jsonify({'error': str(ve)}), 400
+    except ValidationError as ve:
+        return jsonify({
+            "error": "Validation Error",
+            "details": str(ve)
+        }), 400
+
+    except ValueError as e:
+        return jsonify({
+            "error": "Validation Error",
+            "details": str(e)
+        }), 400
 
     except Exception as e:
         db.session.rollback()
