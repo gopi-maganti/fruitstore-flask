@@ -11,6 +11,8 @@ class Fruit(db.Model):
     size = db.Column(db.String(50), nullable=True)
     image_url = db.Column(db.String(200), nullable=True)
 
+    fruit_info = db.relationship('FruitInfo', back_populates='fruit', cascade='all, delete-orphan', lazy=True)
+
     def exists(self):
         filters = {
             'name': self.name,
@@ -47,7 +49,7 @@ class FruitInfo(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     sell_by_date = db.Column(db.DateTime, nullable=False)
     
-    fruit = db.relationship('Fruit', backref='fruit_info')
+    fruit = db.relationship('Fruit', back_populates='fruit_info')
 
     def exists(self):
         return FruitInfo.query.filter_by(

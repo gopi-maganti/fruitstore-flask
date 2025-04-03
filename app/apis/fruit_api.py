@@ -1,6 +1,8 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 from flasgger import swag_from
 from datetime import datetime
+from werkzeug.utils import secure_filename
+import os
 
 from pydantic import ValidationError
 
@@ -14,81 +16,92 @@ fruit_bp = Blueprint('fruit_bp', __name__)
 @fruit_bp.route('/add', methods=['POST'])
 @swag_from({
     'tags': ['Fruit'],
-    'description': 'Add a new fruit with additional information',
+    'consumes': ['multipart/form-data'],
     'parameters': [
-        {
-            'name': 'body',
-            'in': 'body',
-            'required': True,
-            'schema': {
-                'type': 'object',
-                'properties': {
-                    'name': {'type': 'string'},
-                    'description': {'type': 'string'},
-                    'color': {'type': 'string'},
-                    'size': {'type': 'string'},
-                    'image_url': {'type': 'string'},
-                    'has_seeds': {'type': 'boolean'},
-                    'weight': {'type': 'number'},
-                    'price': {'type': 'number'},
-                    'total_quantity': {'type': 'integer'},
-                    'sell_by_date': {'type': 'string', 'format': 'date-time'}
-                },
-                'required': ['name', 'color', 'size', 'image_url',
-                             'weight', 'price', 'total_quantity',
-                             'sell_by_date']
-            }
-        }
+        {'name': 'name', 'in': 'formData', 'type': 'string', 'required': True},
+        {'name': 'description', 'in': 'formData', 'type': 'string'},
+        {'name': 'color', 'in': 'formData', 'type': 'string', 'required': True},
+        {'name': 'size', 'in': 'formData', 'type': 'string', 'required': True},
+        {'name': 'has_seeds', 'in': 'formData', 'type': 'boolean'},
+        {'name': 'weight', 'in': 'formData', 'type': 'number', 'required': True},
+        {'name': 'price', 'in': 'formData', 'type': 'number', 'required': True},
+        {'name': 'total_quantity', 'in': 'formData', 'type': 'integer', 'required': True},
+        {'name': 'available_quantity', 'in': 'formData', 'type': 'integer'},
+        {'name': 'sell_by_date', 'in': 'formData', 'type': 'string', 'format': 'date', 'required': True},
+        {'name': 'image', 'in': 'formData', 'type': 'file', 'required': True}
     ],
     'responses': {
-        201: {
-            'description': 'Fruit and FruitInfo added successfully',
-        },
-        400: {
-            'description': "Missing or invalid fields",
-            "examples": {
-                "application/json": {
-                    "error": "Missing fields: name, color, size, image_url, weight, price, total_quantity, sell_by_date"
-                }
-            }
-        },
-        500: {
-            "description": "Internal Server Error"
-        }
+        201: {'description': 'Fruit and image added'},
+        400: {'description': 'Validation or file error'},
+        500: {'description': 'Server Error'}
     }
 })
 def add_fruit_with_info():
     try:
-        data = request.get_json()
-        validated_data = FruitValidation(**data)
+        # Validate and save image
+        file = request.files.get('image')
+        if not file:
+            return jsonify({'error': 'No image file received'}), 400
 
+        filename = secure_filename(file.filename)
+        upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+        file.save(upload_path)
+        image_url = f"/static/uploads/{filename}"
+
+        # Parse form fields
+        name = request.form.get("name")
+        color = request.form.get("color")
+        size = request.form.get("size")
+        description = request.form.get("description")
+        has_seeds = request.form.get("has_seeds", "false").lower() == "true"
+
+        try:
+            weight = float(request.form.get("weight"))
+            price = float(request.form.get("price"))
+            total_quantity = int(request.form.get("total_quantity"))
+            available_quantity = int(request.form.get("available_quantity") or total_quantity)
+        except Exception as value_err:
+            return jsonify({'error': 'Invalid number field', 'details': str(value_err)}), 400
+
+        # Parse and validate date only (no time)
+        sell_by_date_str = request.form.get("sell_by_date")
+        try:
+            sell_by_date = datetime.strptime(sell_by_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return jsonify({
+                'error': 'Invalid date format',
+                'details': 'Expected format: YYYY-MM-DD (e.g., 2025-04-24)'
+            }), 400
+
+        # Create and save Fruit
         fruit = Fruit(
-            name=validated_data.name,
-            color=validated_data.color,
-            description=validated_data.description,
-            has_seeds=validated_data.has_seeds,
-            size=validated_data.size,
-            image_url=validated_data.image_url
+            name=name,
+            color=color,
+            description=description,
+            has_seeds=has_seeds,
+            size=size,
+            image_url=image_url
         )
 
         if fruit.exists():
-            raise ValueError("Fruit with these details already exists. If you want to update, use the update button.")
+            return jsonify({'error': 'Fruit with these details already exists.'}), 400
 
         db.session.add(fruit)
         db.session.flush()
 
+        # Create and save FruitInfo
         fruit_info = FruitInfo(
             fruit_id=fruit.fruit_id,
-            weight=validated_data.weight,
-            price=validated_data.price,
-            total_quantity=validated_data.total_quantity,
-            available_quantity=validated_data.available_quantity or validated_data.total_quantity,
+            weight=weight,
+            price=price,
+            total_quantity=total_quantity,
+            available_quantity=available_quantity,
             created_at=datetime.utcnow(),
-            sell_by_date=validated_data.sell_by_date
+            sell_by_date=sell_by_date
         )
 
         if fruit_info.exists():
-            raise ValueError("Fruit info with these details already exists. If you want to update, use the update button.")
+            return jsonify({'error': 'Fruit info with these details already exists.'}), 400
 
         db.session.add(fruit_info)
         db.session.commit()
@@ -99,16 +112,9 @@ def add_fruit_with_info():
             'fruit_info_id': fruit_info.info_id
         }), 201
 
-    except ValidationError as ve:
-        return jsonify({'error': 'Validation Error', 'details': ve.errors()}), 400
-
-    except ValueError as ve:
-        db.session.rollback()
-        return jsonify({'error': str(ve)}), 400
-
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
+        return jsonify({'error': 'Upload failed', 'details': str(e)}), 500
 
 # Get all fruits and their information
 @fruit_bp.route('/', methods=['GET'])
@@ -134,7 +140,7 @@ def add_fruit_with_info():
                         'weight': {'type': 'number'},
                         'price': {'type': 'number'},
                         'total_quantity': {'type': 'integer'},
-                        'sell_by_date': {'type': 'string', 'format': 'date-time'}
+                        'sell_by_date': {'type': 'string', 'format': 'date'}
                     }
                 }
             }

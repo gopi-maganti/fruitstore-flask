@@ -1,6 +1,8 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flasgger import Swagger
+from flask_cors import CORS
+import os
 
 db = SQLAlchemy()
 
@@ -8,7 +10,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object('config.Config')
 
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True) 
+
     db.init_app(app)
+    CORS(app, resources={r"/*": {"origins": "*"}})
 
     Swagger(app)
 
