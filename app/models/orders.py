@@ -17,16 +17,16 @@ class Order(db.Model):
     order_id = db.Column(db.Integer, primary_key=True)
     parent_order_id = db.Column(db.Integer, db.ForeignKey('parent_orders.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    fruit_id = db.Column(db.Integer, db.ForeignKey('fruit.fruit_id'), nullable=False)
-    info_id = db.Column(db.Integer, db.ForeignKey('fruit_info.info_id'), nullable=False)
+    fruit_id = db.Column(db.Integer, db.ForeignKey('fruit.fruit_id', ondelete='SET NULL'), nullable=True)
+    info_id = db.Column(db.Integer, db.ForeignKey('fruit_info.info_id'), nullable=True)
     is_seeded = db.Column(db.Boolean, default=False)
     quantity = db.Column(db.Integer, nullable=False)
     order_date = db.Column(db.DateTime, default=db.func.current_timestamp())
     price_by_fruit = db.Column(db.Float, nullable=False)
 
     user = db.relationship('User', backref='orders')
-    fruit = db.relationship('Fruit', backref='orders')
-    fruit_info = db.relationship('FruitInfo', backref='orders')
+    fruit = db.relationship('Fruit', backref=db.backref('orders', passive_deletes=True))
+    fruit_info = db.relationship('FruitInfo', backref=db.backref('orders', passive_deletes=True))
 
     @property
     def fruit_name(self):

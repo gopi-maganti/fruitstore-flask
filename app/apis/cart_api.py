@@ -58,9 +58,6 @@ def add_to_cart():
         if not fruit_info:
             return jsonify({'error': 'FruitInfo not found for this fruit'}), 404
 
-        if validated_data.cart_ids and len(validated_data.cart_ids) > 50:
-            return jsonify({'error': 'Cannot process more than 50 cart items at once'}), 400
-
         cart_item = Cart(
             user_id=validated_data.user_id,
             fruit_id=validated_data.fruit_id,

@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from flasgger import Swagger
 from flask_cors import CORS
 import os
@@ -16,6 +17,11 @@ def create_app():
     CORS(app, resources={r"/*": {"origins": "*"}})
 
     Swagger(app)
+
+    @app.before_request
+    def before_request():
+        if 'sqlite' in str(db.engine.url):
+            db.session.execute(text('PRAGMA foreign_keys=ON'))
 
     from app.apis.fruit_api import fruit_bp
     from app.apis.user_api import user_bp
