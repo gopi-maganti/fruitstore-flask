@@ -35,5 +35,20 @@ def create_app():
 
     with app.app_context():
         db.create_all()
+        seed_guest_user()  # <-- this ensures guest user exists
 
     return app
+
+# 🔽 Function to create the guest user if it doesn't exist
+def seed_guest_user():
+    from app.models.users import User
+    guest_user = User.query.get(-1)
+    if not guest_user:
+        guest = User(
+            user_id=-1,
+            name="Guest",
+            email="guest@fruitstore.com",
+            phone_number="0000000000"
+        )
+        db.session.add(guest)
+        db.session.commit()

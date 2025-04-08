@@ -13,7 +13,7 @@ order_bp = Blueprint('order', __name__)
 '''
 PLACE NEW ORDER
 '''
-@order_bp.route('/add/<int:user_id>', methods=['POST'])
+@order_bp.route('/add/<string:user_id>', methods=['POST'])
 @swag_from({
     'tags': ['Order'],
     'description': 'Place one grouped order with multiple cart items and return the combined total.',
@@ -21,7 +21,7 @@ PLACE NEW ORDER
         {
             'name': 'user_id',
             'in': 'path',
-            'type': 'integer',
+            'type': 'string',
             'required': True
         },
         {

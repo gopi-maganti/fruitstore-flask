@@ -28,5 +28,7 @@ class Cart(db.Model):
             'fruit_id': self.fruit_id,
             'quantity': self.quantity,
             'item_price': self.item_price,
-            'added_date': self.added_date.isoformat() if self.added_date else None
+            'added_date': self.added_date.isoformat() if self.added_date else None,
+            'fruit_name': self.fruit.name if self.fruit else None,
+            'image_url': self.fruit.image_url if self.fruit else None
         }
