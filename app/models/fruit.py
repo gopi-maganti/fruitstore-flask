@@ -11,7 +11,7 @@ class Fruit(db.Model):
     size = db.Column(db.String(50), nullable=True)
     image_url = db.Column(db.String(200), nullable=True)
 
-    fruit_info = db.relationship('FruitInfo', back_populates='fruit', cascade='all, delete-orphan', lazy=True)
+    fruit_info = db.relationship('FruitInfo', back_populates='fruit', cascade='all, delete-orphan', lazy=True, passive_deletes=True)
 
     def exists(self):
         filters = {
@@ -41,7 +41,7 @@ class Fruit(db.Model):
 class FruitInfo(db.Model):
     __tablename__ = 'fruit_info'
     info_id = db.Column(db.Integer, primary_key=True)
-    fruit_id = db.Column(db.Integer, db.ForeignKey('fruit.fruit_id'), nullable=False)
+    fruit_id = db.Column(db.Integer, db.ForeignKey('fruit.fruit_id', ondelete='CASCADE'), nullable=False)
     weight = db.Column(db.Float, nullable=False)
     price = db.Column(db.Float, nullable=False)
     total_quantity = db.Column(db.Integer, nullable=False)

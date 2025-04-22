@@ -244,6 +244,90 @@ def get_fruit_by_id(fruit_id):
 
     return jsonify(result), 200
 
+@fruit_bp.route('/search', methods=['GET'])
+@swag_from({
+    'tags': ['Fruit'],
+    'description': 'Search fruits by weight, price, total quantity, or available quantity',
+    'parameters': [
+        {
+            'name': 'value',
+            'in': 'query',
+            'required': True,
+            'type': 'number'
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'List of matching fruits',
+            'schema': {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'fruit_id': {'type': 'integer'},
+                        'name': {'type': 'string'},
+                        'description': {'type': 'string'},
+                        'color': {'type': 'string'},
+                        'size': {'type': 'string'},
+                        'image_url': {'type': 'string'},
+                        'has_seeds': {'type': 'boolean'},
+                        'info_id': {'type': 'integer'},
+                        'weight': {'type': 'number'},
+                        'price': {'type': 'number'},
+                        'total_quantity': {'type': 'integer'},
+                        'available_quantity': {'type': 'integer'},
+                        'sell_by_date': {'type': 'string', 'format': 'date-time'}
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Bad Request"
+        },
+        500: {
+            "description": "Internal Server Error"
+        }
+    }
+})
+def search_fruits():
+    query = request.args.get('value')
+    if not query:
+        return jsonify({'error': 'Search value is required'}), 400
+
+    try:
+        float_val = float(query)
+    except ValueError:
+        return jsonify({'error': 'Search value must be a number'}), 400
+
+    matching_infos = FruitInfo.query.filter(
+        (FruitInfo.price == float_val) |
+        (FruitInfo.weight == float_val) |
+        (FruitInfo.total_quantity == float_val) |
+        (FruitInfo.available_quantity == float_val)
+    ).all()
+
+    results = []
+    for info in matching_infos:
+        fruit = info.fruit
+        results.append({
+            'fruit_id': fruit.fruit_id,
+            'name': fruit.name,
+            'description': fruit.description,
+            'color': fruit.color,
+            'size': fruit.size,
+            'image_url': fruit.image_url,
+            'has_seeds': fruit.has_seeds,
+            'info_id': info.info_id,
+            'weight': info.weight,
+            'price': info.price,
+            'total_quantity': info.total_quantity,
+            'available_quantity': info.available_quantity,
+            'sell_by_date': info.sell_by_date.isoformat()
+        })
+
+    return jsonify(results), 200
+
+
 # Update only the necessary fields of fruit information
 @fruit_bp.route('/<int:fruit_id>', methods=['PUT'])
 @swag_from({
@@ -321,9 +405,9 @@ def update_fruit_info(fruit_id):
     }), 200
 
 # Delete fruit by ID
-@fruit_bp.route('/<int:fruit_id>', methods=['DELETE'])
+@fruit_bp.route('/delete', methods=['DELETE', 'OPTIONS'])
 @swag_from({
-    'tags': ['Fruit'],
+    'tags': ['Fruit'],  
     'description': 'Delete fruit by ID',
     'parameters': [
         {
@@ -345,12 +429,42 @@ def update_fruit_info(fruit_id):
         }
     }
 })
-def delete_fruit(fruit_id):
-    fruit = Fruit.query.get(fruit_id)
-    if not fruit:
-        return jsonify({'error': 'Fruit not found'}), 404
+def delete_fruits():
+    if request.method == 'OPTIONS':
+        return '', 204
 
-    db.session.delete(fruit)
-    db.session.commit()
+    try:
+        data = request.get_json()
+        ids = data.get("ids", [])
 
-    return jsonify({'message': 'Fruit deleted successfully'}), 200
+        if not ids:
+            return jsonify({'error': 'No fruit IDs provided'}), 400
+
+        deleted_count = 0
+
+        for fruit_id in ids:
+            # Delete cart items first
+            from app.models.cart import Cart
+            Cart.query.filter_by(fruit_id=fruit_id).delete()
+
+            # Delete orders referencing this fruit
+            from app.models.orders import Order
+            Order.query.filter_by(fruit_id=fruit_id).delete()
+
+            # Delete fruit info
+            fruit_info = FruitInfo.query.filter_by(fruit_id=fruit_id).first()
+            if fruit_info:
+                db.session.delete(fruit_info)
+
+            # Delete fruit
+            fruit = Fruit.query.get(fruit_id)
+            if fruit:
+                db.session.delete(fruit)
+                deleted_count += 1
+
+        db.session.commit()
+        return jsonify({'message': f'Deleted {deleted_count} fruit(s) successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Deletion failed', 'details': str(e)}), 500

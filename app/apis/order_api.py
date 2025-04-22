@@ -33,8 +33,15 @@ PLACE NEW ORDER
                 'properties': {
                     'cart_ids': {
                         'type': 'array',
-                        'items': {'type': 'integer'},
-                        'description': 'Optional list of cart item IDs to checkout.'
+                        'items': {'type': 'integer'}
+                    },
+                    'guest_info': {
+                        'type': 'object',
+                        'properties': {
+                            'name': {'type': 'string'},
+                            'email': {'type': 'string'},
+                            'phone_number': {'type': 'string'}
+                        }
                     }
                 }
             }
@@ -52,6 +59,30 @@ def add_order(user_id):
         data = request.get_json(silent=True)
         validated_data = OrderValidation(**data) if data else OrderValidation()
 
+        if user_id == -1:
+            if not validated_data.guest_info:
+                return jsonify({'error': 'Guest info is required for guest checkout'}), 400
+
+            guest_info = validated_data.guest_info
+
+            guest_user = User(
+                name=guest_info.name,
+                email=guest_info.email,
+                phone_number=guest_info.phone_number
+            )
+            try:
+                guest_user.save()
+            except ValueError:
+                guest_user = User.query.filter_by(
+                    email=guest_info.email,
+                    phone_number=guest_info.phone_number
+                ).first()
+
+                if not guest_user:
+                    return jsonify({'error': 'Could not create or find guest user'}), 500
+
+            user_id = guest_user.user_id
+
         user = User.query.get(user_id)
         if not user:
             return jsonify({'error': 'User not found'}), 404
@@ -68,7 +99,6 @@ def add_order(user_id):
         created_order_items = []
         total_price_accumulator = 0.0
 
-        # Create parent order
         parent_order = ParentOrder(user_id=user_id)
         db.session.add(parent_order)
         db.session.flush()
@@ -77,12 +107,12 @@ def add_order(user_id):
             fruit_info = item.fruit_info
 
             if fruit_info.available_quantity < item.quantity:
-                raise ValueError(f"Not enough quantity for fruit ID {item.fruit_id}")
+                raise ValueError(f"Not enough quantity for fruit: {item.fruit_name}")
 
             fruit_info.available_quantity -= item.quantity
 
             order = Order(
-                user_id=item.user_id,
+                user_id=user_id,
                 parent_order_id=parent_order.id,
                 fruit_id=item.fruit_id,
                 info_id=item.info_id,
@@ -131,16 +161,29 @@ GET ALL ORDERS
 @order_bp.route('/getall', methods=['GET'])
 @swag_from({
     'tags': ['Order'],
-    'description': 'Get all orders',
+    'description': 'Get all orders with user names',
     'responses': {
         200: {
-            'description': 'List of all orders'
+            'description': 'List of all orders with user info'
         }
     }
 })
 def get_all_orders():
     orders = Order.query.all()
-    return jsonify([order.as_dict() for order in orders]), 200
+    return jsonify([
+        {
+            'order_id': order.order_id,
+            'user_id': order.user_id,
+            'user_name': order.user.name if order.user else "Unknown",
+            'fruit': order.fruit_name,
+            'size': order.fruit_size,
+            'quantity': order.quantity,
+            'price': order.price_by_fruit,
+            'total': order.total_price,
+            'date': order.order_date.isoformat()
+        }
+        for order in orders
+    ]), 200
 
 '''
 GET ORDERS BY USER ID
@@ -188,3 +231,35 @@ def get_order_history_by_user(user_id):
             ]
         } for parent_order in parent_orders
     ]), 200
+
+
+@order_bp.route('/grouped', methods=['GET'])
+@swag_from({
+    'tags': ['Order'],
+    'description': 'Get all orders grouped by parent order with user names',
+    'responses': {
+        200: {
+            'description': 'List of all grouped orders with user info'
+        }
+    }
+})
+def get_grouped_orders():
+    parent_orders = ParentOrder.query.order_by(ParentOrder.order_date.desc()).all()
+
+    grouped = []
+    for parent in parent_orders:
+        grouped.append({
+            "parent_order_id": parent.id,
+            "order_date": parent.order_date.isoformat(),
+            "user_name": parent.user.name if parent.user else "Unknown",
+            "orders": [
+                {
+                    "fruit_name": item.fruit_name,
+                    "size": item.fruit_size,
+                    "quantity": item.quantity,
+                    "price": item.price_by_fruit,
+                    "total": item.total_price
+                } for item in parent.items
+            ]
+        })
+    return jsonify(grouped), 200

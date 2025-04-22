@@ -4,15 +4,16 @@ class Cart(db.Model):
     __tablename__ = 'cart'
     cart_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    fruit_id = db.Column(db.Integer, db.ForeignKey('fruit.fruit_id'), nullable=False)
-    info_id = db.Column(db.Integer, db.ForeignKey('fruit_info.info_id'), nullable=False)
+    fruit_id = db.Column(db.Integer, db.ForeignKey('fruit.fruit_id', ondelete='CASCADE'), nullable=False)
+    info_id = db.Column(db.Integer, db.ForeignKey('fruit_info.info_id', ondelete='CASCADE'), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     item_price = db.Column(db.Float, nullable=True)
     added_date = db.Column(db.DateTime, default=db.func.current_timestamp())
     
     user = db.relationship('User', backref='cart')
-    fruit = db.relationship('Fruit', backref='cart')
-    fruit_info = db.relationship('FruitInfo', backref='cart')
+    fruit = db.relationship('Fruit', backref=db.backref('cart', passive_deletes=True))
+    fruit_info = db.relationship('FruitInfo', backref=db.backref('cart', passive_deletes=True))
+
 
     def save(self):
         db.session.add(self)
