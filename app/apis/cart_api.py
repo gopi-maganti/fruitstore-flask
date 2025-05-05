@@ -234,6 +234,7 @@ def delete_cart_item(cart_id):
     db.session.commit()
     return jsonify({'message': 'Cart item deleted successfully'}), 200
 
+# Clear all Cart Items
 @cart_bp.route('/clear/<int:user_id>', methods=['DELETE'])
 @swag_from({
     'tags': ['Cart'],

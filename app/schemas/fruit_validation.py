@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl, constr, conint, confloat, validator
+from pydantic import BaseModel, HttpUrl, constr, conint, confloat, field_validator, validator
 from typing import Optional
 from datetime import datetime
 
@@ -15,7 +15,7 @@ class FruitValidation(BaseModel):
     available_quantity: Optional[conint(ge=0)] = None
     sell_by_date: datetime
 
-    @validator('sell_by_date')
+    @field_validator('sell_by_date')
     def must_be_future(cls, v):
         if v <= datetime.utcnow():
             raise ValueError("sell_by_date must be a future date")

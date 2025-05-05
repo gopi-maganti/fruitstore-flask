@@ -247,85 +247,99 @@ def get_fruit_by_id(fruit_id):
 @fruit_bp.route('/search', methods=['GET'])
 @swag_from({
     'tags': ['Fruit'],
-    'description': 'Search fruits by weight, price, total quantity, or available quantity',
+    'description': 'Search fruits by filters, range values, and keyword across name/description',
     'parameters': [
-        {
-            'name': 'value',
-            'in': 'query',
-            'required': True,
-            'type': 'number'
-        }
+        {'name': 'value', 'in': 'query', 'type': 'number', 'required': False, 'description': 'Exact match on price, weight, total_quantity, or available_quantity'},
+        {'name': 'search', 'in': 'query', 'type': 'string', 'required': False, 'description': 'Keyword search in name/description'},
+        {'name': 'price_min', 'in': 'query', 'type': 'number', 'required': False},
+        {'name': 'price_max', 'in': 'query', 'type': 'number', 'required': False},
+        {'name': 'available_quantity_min', 'in': 'query', 'type': 'number', 'required': False},
+        {'name': 'available_quantity_max', 'in': 'query', 'type': 'number', 'required': False},
+        {'name': 'total_quantity_min', 'in': 'query', 'type': 'number', 'required': False},
+        {'name': 'total_quantity_max', 'in': 'query', 'type': 'number', 'required': False},
+        {'name': 'weight_min', 'in': 'query', 'type': 'number', 'required': False},
+        {'name': 'weight_max', 'in': 'query', 'type': 'number', 'required': False},
     ],
     'responses': {
-        200: {
-            'description': 'List of matching fruits',
-            'schema': {
-                'type': 'array',
-                'items': {
-                    'type': 'object',
-                    'properties': {
-                        'fruit_id': {'type': 'integer'},
-                        'name': {'type': 'string'},
-                        'description': {'type': 'string'},
-                        'color': {'type': 'string'},
-                        'size': {'type': 'string'},
-                        'image_url': {'type': 'string'},
-                        'has_seeds': {'type': 'boolean'},
-                        'info_id': {'type': 'integer'},
-                        'weight': {'type': 'number'},
-                        'price': {'type': 'number'},
-                        'total_quantity': {'type': 'integer'},
-                        'available_quantity': {'type': 'integer'},
-                        'sell_by_date': {'type': 'string', 'format': 'date-time'}
-                    }
-                }
-            }
-        },
-        400: {
-            "description": "Bad Request"
-        },
-        500: {
-            "description": "Internal Server Error"
-        }
+        200: {'description': 'List of matching fruits'},
+        400: {'description': 'Bad Request'},
+        500: {'description': 'Internal Server Error'}
     }
 })
 def search_fruits():
-    query = request.args.get('value')
-    if not query:
-        return jsonify({'error': 'Search value is required'}), 400
-
     try:
-        float_val = float(query)
-    except ValueError:
-        return jsonify({'error': 'Search value must be a number'}), 400
+        query = FruitInfo.query.join(Fruit)
 
-    matching_infos = FruitInfo.query.filter(
-        (FruitInfo.price == float_val) |
-        (FruitInfo.weight == float_val) |
-        (FruitInfo.total_quantity == float_val) |
-        (FruitInfo.available_quantity == float_val)
-    ).all()
+        # Exact match for numeric fields
+        value = request.args.get('value')
+        if value:
+            try:
+                val = float(value)
+                query = query.filter(
+                    (FruitInfo.price == val) |
+                    (FruitInfo.weight == val) |
+                    (FruitInfo.total_quantity == val) |
+                    (FruitInfo.available_quantity == val)
+                )
+            except ValueError:
+                return jsonify({'error': 'Invalid numeric value'}), 400
 
-    results = []
-    for info in matching_infos:
-        fruit = info.fruit
-        results.append({
-            'fruit_id': fruit.fruit_id,
-            'name': fruit.name,
-            'description': fruit.description,
-            'color': fruit.color,
-            'size': fruit.size,
-            'image_url': fruit.image_url,
-            'has_seeds': fruit.has_seeds,
-            'info_id': info.info_id,
-            'weight': info.weight,
-            'price': info.price,
-            'total_quantity': info.total_quantity,
-            'available_quantity': info.available_quantity,
-            'sell_by_date': info.sell_by_date.isoformat()
-        })
+        # Keyword search
+        search_term = request.args.get('search', '').strip()
+        if search_term:
+            query = query.filter(
+                (Fruit.name.ilike(f"%{search_term}%")) |
+                (Fruit.color.ilike(f"%{search_term}%"))
+            )
 
-    return jsonify(results), 200
+        # Helper to apply range filter and return updated query
+        def apply_range(query, field):
+            col = getattr(FruitInfo, field)
+            min_val = request.args.get(f"{field}_min")
+            max_val = request.args.get(f"{field}_max")
+            if min_val:
+                try:
+                    query = query.filter(col >= float(min_val))
+                except ValueError:
+                    raise ValueError(f'{field}_min must be numeric')
+            if max_val:
+                try:
+                    query = query.filter(col <= float(max_val))
+                except ValueError:
+                    raise ValueError(f'{field}_max must be numeric')
+            return query
+
+        # Apply filters
+        for f in ['price', 'available_quantity', 'total_quantity', 'weight']:
+            query = apply_range(query, f)
+
+        # Fetch and format results
+        infos = query.all()
+        results = []
+        for info in infos:
+            fruit = info.fruit
+            results.append({
+                'fruit_id': fruit.fruit_id,
+                'name': fruit.name,
+                'description': fruit.description,
+                'color': fruit.color,
+                'size': fruit.size,
+                'image_url': fruit.image_url,
+                'has_seeds': fruit.has_seeds,
+                'info_id': info.info_id,
+                'weight': info.weight,
+                'price': info.price,
+                'total_quantity': info.total_quantity,
+                'available_quantity': info.available_quantity,
+                'sell_by_date': info.sell_by_date.isoformat()
+            })
+
+        return jsonify(results), 200
+
+    except ValueError as ve:
+        return jsonify({'error': str(ve)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
 
 
 # Update only the necessary fields of fruit information
