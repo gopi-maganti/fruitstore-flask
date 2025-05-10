@@ -33,21 +33,33 @@ def test_add_fruit_success(client):
     assert response.status_code == 201
     assert b"Fruit and FruitInfo added successfully" in response.data
 
-# Incomplete fruit data with multiple payloads
-@pytest.mark.parametrize("payload", [
-    {"name": "Orange", "description": "Citrus fruit", "color": "Orange", "size": "Medium", "has_seeds": "true",
-     "weight": "0.3", "price": "1.2", "total_quantity": "50", "available_quantity": "40", "sell_by_date": ""},  # Missing image
-    {"name": "", "description": "", "color": "", "size": "", "has_seeds": "", "weight": "", "price": "",
-     "total_quantity": "", "available_quantity": "", "sell_by_date": ""}, # All fields empty
+@pytest.mark.parametrize("payload, expected_error", [
+    (
+        {
+            "name": "Orange", "description": "Citrus fruit", "color": "Orange", "size": "Medium", "has_seeds": "true",
+            "weight": "0.3", "price": "1.2", "total_quantity": "50", "available_quantity": "40", "sell_by_date": ""
+        },
+        b"Invalid date format"
+    ),
+    (
+        {
+            "name": "", "description": "", "color": "", "size": "", "has_seeds": "", "weight": "", "price": "",
+            "total_quantity": "", "available_quantity": "", "sell_by_date": ""
+        },
+        b"Invalid number field"
+    )
 ])
-def test_add_fruit_invalid_data(client, payload):
+def test_add_fruit_invalid_data(client, payload, expected_error):
     image_data = (io.BytesIO(b"fake image data"), "orange.jpg")
     payload["image"] = image_data
     data = {k: v for k, v in payload.items() if k != "image"}
     file_data = {"image": image_data}
+
     response = client.post("/fruit/add", data={**data, **file_data}, content_type='multipart/form-data')
+
     assert response.status_code == 400
-    assert b"Validation Error" in response.data or b"Missing required fields" in response.data
+    assert expected_error in response.data
+
 
 def test_get_fruit_by_id(client):
     image_data = (io.BytesIO(b"fake image data"), "banana.jpg")
