@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+flasgger = "*"
+flask-cors = "*"
+flask-sqlalchemy = "*"
+pydantic = {extras = ["email"], version = "*"}
+
+[dev-packages]
+pytest = "*"
+
+[requires]
+python_version = "3.11"
+
+[scripts]
+dev = "python run.py"
+tests = "set PYTHONPATH=.; pytest tests/"
+

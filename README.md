@@ -27,7 +27,10 @@ fruitstore-backend/
 │   ├── models/              # SQLAlchemy ORM models
 │   ├── schemas/             # Pydantic request validations
 │   ├── __init__.py          # Flask app factory
-│
+├── tests/
+│   ├── apis/                # API route blueprints
+│   ├── models/              # SQLAlchemy ORM models
+│   ├── __init__.py          # Flask app factory
 ├── static/uploads/          # Image upload directory
 ├── config.py                # Configuration (e.g., DB path, upload folder)
 ├── run.py                   # Entry point to start the server

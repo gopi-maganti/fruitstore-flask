@@ -1,3 +1,9 @@
+import sys
+import os
+
+# ✅ Add the project root directory to the PYTHONPATH BEFORE importing anything from app
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import pytest
 from datetime import datetime, timedelta
 from app.models.users import User

@@ -221,6 +221,8 @@ def test_add_fruit_invalid_data(client, payload, expected_error):
     response = client.post("/fruit/add", data={**data, **file_data}, content_type='multipart/form-data')
 
     assert response.status_code == 400
+    print(expected_error)
+    print(response.data)
     assert expected_error in response.data
 
 
