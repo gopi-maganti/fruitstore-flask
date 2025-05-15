@@ -1,5 +1,12 @@
-from app import create_app
+import os
+
+from dotenv import load_dotenv
 from flask import send_from_directory
+
+from app import create_app
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = create_app()
 
@@ -8,6 +15,8 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
-
-
+    app.run(
+        debug=True,
+        host=os.getenv("FLASK_RUN_HOST", "0.0.0.0"),
+        port=int(os.getenv("FLASK_RUN_PORT", 5000))
+    )

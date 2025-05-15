@@ -3,10 +3,11 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-# Virtual environments
+# Virtual environments & environment variables
 .venv/
 env/
 venv/
+.env
 
 # VSCode settings
 .vscode/
@@ -49,3 +50,4 @@ logs/
 /app/models/__pycache__/
 /app/apis/__pycache__/
 /app/models/__pycache__/
+/tests/__pycache__/

@@ -1,23 +1,28 @@
-import sys
 import os
+import sys
 
 # ✅ Add the project root directory to the PYTHONPATH BEFORE importing anything from app
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from datetime import datetime, timedelta
 
 import pytest
-from datetime import datetime, timedelta
-from app.models.users import User
-from app.models.fruit import Fruit, FruitInfo
-from app.models.cart import Cart
+
 from app import create_app, db
+from app.models.cart import Cart
+from app.models.fruit import Fruit, FruitInfo
+from app.models.users import User
+
 
 @pytest.fixture
 def app():
     app = create_app()
-    app.config.update({
-        "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",  # In-memory database
-    })
+    app.config.update(
+        {
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",  # In-memory database
+        }
+    )
 
     with app.app_context():
         db.create_all()
@@ -25,15 +30,21 @@ def app():
         db.session.remove()
         db.drop_all()
 
+
 @pytest.fixture
 def client(app):
     return app.test_client()
+
 
 @pytest.fixture
 def setup_order_data(app):
     with app.app_context():
         # 👤 User
-        user = User(name="OrderFixtureUser", email="fixtureuser@example.com", phone_number="1010101010")
+        user = User(
+            name="OrderFixtureUser",
+            email="fixtureuser@example.com",
+            phone_number="1010101010",
+        )
         db.session.add(user)
         db.session.flush()
 
@@ -48,7 +59,7 @@ def setup_order_data(app):
             price=4.0,
             total_quantity=50,
             available_quantity=50,
-            sell_by_date=datetime.utcnow() + timedelta(days=10)
+            sell_by_date=datetime.utcnow() + timedelta(days=10),
         )
         db.session.add(info)
         db.session.flush()
@@ -59,7 +70,7 @@ def setup_order_data(app):
             fruit_id=fruit.fruit_id,
             info_id=info.info_id,
             quantity=3,
-            item_price=12.0
+            item_price=12.0,
         )
         db.session.add(cart)
         db.session.commit()
@@ -68,5 +79,5 @@ def setup_order_data(app):
             "user_id": user.user_id,
             "cart_id": cart.cart_id,
             "fruit_id": fruit.fruit_id,
-            "info_id": info.info_id
+            "info_id": info.info_id,
         }

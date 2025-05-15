@@ -1,6 +1,8 @@
-from app.models.users import User
-from app import db
 import pytest
+
+from app import db
+from app.models.users import User
+
 
 def test_user_to_dict(app):
     with app.app_context():
@@ -11,12 +13,14 @@ def test_user_to_dict(app):
         assert result["name"] == "Alice"
         assert result["email"] == "alice@example.com"
 
+
 def test_user_exists(app):
     with app.app_context():
         user = User(name="Bob", email="bob@example.com", phone_number="9876543210")
         db.session.add(user)
         db.session.commit()
         assert user.exists() == True
+
 
 def test_user_save_duplicate_raises(app):
     with app.app_context():

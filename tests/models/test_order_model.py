@@ -1,12 +1,16 @@
-from app.models.orders import ParentOrder, Order
-from app.models.users import User
-from app.models.fruit import Fruit, FruitInfo
-from app import db
 from datetime import datetime, timedelta
+
+from app import db
+from app.models.fruit import Fruit, FruitInfo
+from app.models.orders import Order, ParentOrder
+from app.models.users import User
+
 
 def test_order_total_price(app):
     with app.app_context():
-        user = User(name="OrderUser", email="order@example.com", phone_number="0009998888")
+        user = User(
+            name="OrderUser", email="order@example.com", phone_number="0009998888"
+        )
         fruit = Fruit(name="Mango", color="Yellow", size="L", has_seeds=True)
         db.session.add_all([user, fruit])
         db.session.flush()
@@ -17,7 +21,7 @@ def test_order_total_price(app):
             price=3.0,
             total_quantity=30,
             available_quantity=28,
-            sell_by_date=datetime.utcnow() + timedelta(days=5)
+            sell_by_date=datetime.utcnow() + timedelta(days=5),
         )
         db.session.add(info)
         db.session.flush()
@@ -33,7 +37,7 @@ def test_order_total_price(app):
             info_id=info.info_id,
             is_seeded=True,
             quantity=4,
-            price_by_fruit=3.0
+            price_by_fruit=3.0,
         )
         db.session.add(order)
         db.session.commit()
