@@ -40,6 +40,15 @@ migrations/
 # IDE specific
 *.idea/
 
+# Terraform files
+*.tfstate
+*.tfstate.*
+.terraform*
+.terraform.lock.hcl
+
+# Terraform plan files
+*.tfplan
+
 # Log files
 *.log
 logs/
