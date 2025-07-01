@@ -13,7 +13,7 @@ LABEL \
   description="Docker container for a full-featured Flask backend powering an online fruit store. Supports user management, product catalog with image uploads, cart operations, and order processing using SQLite and RESTful APIs."
 
 # Copy only requirements first (for better caching)
-COPY requirements/base.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
