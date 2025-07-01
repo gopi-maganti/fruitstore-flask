@@ -92,19 +92,41 @@ resource "aws_instance" "fruitstore_instance" {
   }
   provisioner "remote-exec" {
     inline = [
-      "sudo apt update -y",
-      "sudo apt install -y python3-pip git postgresql postgresql-contrib",
-      "set -o allexport && source /home/ubuntu/.env && set +o allexport",
+      "export DEBIAN_FRONTEND=noninteractive",
+
+      # Disable interactive restart prompts
+      "echo '\\$nrconf{restart} = \"a\";' | sudo tee /etc/needrestart/needrestart.conf",
+
+      # Standard install commands
+      "sudo apt-get update -y",
+      "sudo apt-get install -y software-properties-common",
+      "sudo add-apt-repository -y universe",
+      "sudo apt-get update -y",
+      "sudo apt-get install -y -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' python3-pip git postgresql postgresql-contrib",
+
+      # Clone the repo
       "git clone https://github.com/gopi-maganti/fruitstore-flask.git",
       "cd fruitstore-flask",
-      
-      # Setup PostgreSQL
-      "sudo systemctl start postgresql",
-      "sudo -u postgres psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';\" -c \"CREATE DATABASE $DB_NAME;\" -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\"",
 
-      # Install Python dependencies and run app
+      # Export env vars from .env
+      "export $(grep -v '^#' .env | xargs)",
+
+      # Use grep to extract .env variables
+      "DB_USER=$(grep DB_USER .env | cut -d '=' -f2 | xargs)",
+      "DB_PASSWORD=$(grep DB_PASSWORD .env | cut -d '=' -f2 | xargs)",
+      "DB_NAME=$(grep DB_NAME .env | cut -d '=' -f2 | xargs)",
+
+      # Create DB user and DB
+      "sudo -u postgres psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';\"",
+      "sudo -u postgres psql -c \"CREATE DATABASE $DB_NAME;\"",
+      "sudo -u postgres psql -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\"",
+
+      # Install Python requirements
       "pip3 install -r requirements.txt",
-      "python3 run.py"
+      "pip3 install python-dotenv",
+
+      # Launch Flask
+      "FLASK_RUN_HOST=0.0.0.0 FLASK_RUN_PORT=5000 nohup python3 run.py > output.log 2>&1 &"
     ]
   }
 }
