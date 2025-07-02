@@ -4,11 +4,19 @@ provider "aws" {
 
 resource "aws_vpc" "fruitstore_vpc" {
   cidr_block = var.vpc_cidr
+
+  tags = {
+    Name = "FruitStoreVPC"
+  }
 }
 
 resource "aws_key_pair" "fruitstore_key_pair" {
   key_name   = "fruitstore_key"
   public_key = file("/Users/gopikrishnamaganti/.ssh/id_rsa.pub")
+
+  tags = {
+    Name = "FruitStoreKeyPair"
+  }
 }
 
 resource "aws_subnet" "fruitstore_subnet" {
@@ -70,6 +78,10 @@ resource "aws_security_group" "fruitstore_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    Name = "FruitStoreSG"
+  }
 }
 
 resource "aws_instance" "fruitstore_instance" {
@@ -128,5 +140,9 @@ resource "aws_instance" "fruitstore_instance" {
       # Launch Flask
       "FLASK_RUN_HOST=0.0.0.0 FLASK_RUN_PORT=5000 nohup python3 run.py > output.log 2>&1 &"
     ]
+  }
+
+  tags = {
+    Name = "FruitStoreInstance"
   }
 }
