@@ -1,0 +1,27 @@
+description: Add a new user
+parameters:
+- in: body
+  name: body
+  required: true
+  schema:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      phone_number:
+        type: string
+    required:
+    - name
+    - email
+    - phone_number
+    type: object
+responses:
+  201:
+    description: User added successfully
+  400:
+    description: Bad request
+  500:
+    description: Internal server error
+tags:
+- User

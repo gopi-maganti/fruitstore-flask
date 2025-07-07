@@ -1,0 +1,13 @@
+description: Delete user by ID
+parameters:
+- in: path
+  name: user_id
+  required: true
+  type: integer
+responses:
+  200:
+    description: User deleted
+  404:
+    description: User not found
+tags:
+- User

@@ -1,0 +1,8 @@
+description: Get all fruits and their information
+responses:
+  200:
+    description: List of fruits and their information
+  500:
+    description: Internal Server Error
+tags:
+- Fruit

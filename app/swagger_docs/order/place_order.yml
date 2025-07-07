@@ -1,0 +1,17 @@
+description: Place an order for cart items
+parameters:
+- in: path
+  name: user_id
+  required: true
+  type: integer
+responses:
+  201:
+    description: Order placed
+  400:
+    description: Bad request
+  404:
+    description: User not found
+  500:
+    description: Failed to place order
+tags:
+- Order

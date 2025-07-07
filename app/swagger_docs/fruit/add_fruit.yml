@@ -1,0 +1,54 @@
+consumes:
+- multipart/form-data
+parameters:
+- in: formData
+  name: name
+  required: true
+  type: string
+- in: formData
+  name: description
+  type: string
+- in: formData
+  name: color
+  required: true
+  type: string
+- in: formData
+  name: size
+  required: true
+  type: string
+- in: formData
+  name: has_seeds
+  type: boolean
+- in: formData
+  name: weight
+  required: true
+  type: number
+- in: formData
+  name: price
+  required: true
+  type: number
+- in: formData
+  name: total_quantity
+  required: true
+  type: integer
+- in: formData
+  name: available_quantity
+  type: integer
+- format: date
+  in: formData
+  name: sell_by_date
+  required: true
+  type: string
+- in: formData
+  name: image
+  required: true
+  type: file
+responses:
+  201:
+    description: Fruit and image added
+  400:
+    description: Validation or file error
+  500:
+    description: Server Error
+tags:
+- Fruit

@@ -1,0 +1,24 @@
+description: Associate cart items from one user to another
+parameters:
+- in: body
+  name: body
+  required: true
+  schema:
+    properties:
+      new_user_id:
+        type: integer
+      old_user_id:
+        type: integer
+    required:
+    - old_user_id
+    - new_user_id
+    type: object
+responses:
+  200:
+    description: Cart items associated successfully
+  400:
+    description: Bad Request
+  404:
+    description: User not found
+tags:
+- Cart

@@ -1,0 +1,13 @@
+description: Clear all items from a user's cart
+parameters:
+- in: path
+  name: user_id
+  required: true
+  type: integer
+responses:
+  200:
+    description: Cart cleared
+  404:
+    description: No cart items to delete
+tags:
+- Cart

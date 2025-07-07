@@ -1,0 +1,29 @@
+description: Add fruit to the cart
+parameters:
+- in: body
+  name: body
+  required: true
+  schema:
+    properties:
+      fruit_id:
+        type: integer
+      quantity:
+        type: integer
+      user_id:
+        type: integer
+    required:
+    - user_id
+    - fruit_id
+    - quantity
+    type: object
+responses:
+  201:
+    description: Item added to cart successfully
+  400:
+    description: Bad Request
+  404:
+    description: FruitInfo or User not found
+  500:
+    description: Internal Server Error
+tags:
+- Cart

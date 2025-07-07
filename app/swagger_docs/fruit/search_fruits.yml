@@ -1,0 +1,51 @@
+description: Search fruits by filters, range values, and keyword across name/description
+parameters:
+- in: query
+  name: value
+  required: false
+  type: number
+- in: query
+  name: search
+  required: false
+  type: string
+- in: query
+  name: price_min
+  required: false
+  type: number
+- in: query
+  name: price_max
+  required: false
+  type: number
+- in: query
+  name: available_quantity_min
+  required: false
+  type: number
+- in: query
+  name: available_quantity_max
+  required: false
+  type: number
+- in: query
+  name: total_quantity_min
+  required: false
+  type: number
+- in: query
+  name: total_quantity_max
+  required: false
+  type: number
+- in: query
+  name: weight_min
+  required: false
+  type: number
+- in: query
+  name: weight_max
+  required: false
+  type: number
+responses:
+  200:
+    description: List of matching fruits
+  400:
+    description: Bad Request
+  500:
+    description: Internal Server Error
+tags:
+- Fruit
