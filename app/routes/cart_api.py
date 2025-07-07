@@ -56,7 +56,7 @@ def associate_cart():
 
 
 @cart_bp.route("/<string:user_id>", methods=["GET"])
-@swag_from("swagger_docs/cart/get_cart_items.yml")
+@swag_from("swagger_docs/cart/get_user_cart.yml")
 def get_cart_items(user_id):
     try:
         user_id = int(user_id)
@@ -117,7 +117,7 @@ def delete_cart_item(cart_id):
 
 
 @cart_bp.route("/clear/<int:user_id>", methods=["DELETE"])
-@swag_from("swagger_docs/cart/clear_cart.yml")
+@swag_from("swagger_docs/cart/clear_user_cart.yml")
 def clear_cart(user_id):
     cart_items = Cart.query.filter_by(user_id=user_id).all()
 

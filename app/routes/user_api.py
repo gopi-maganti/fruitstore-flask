@@ -10,33 +10,7 @@ user_bp = Blueprint("user_bp", __name__)
 logger = get_logger("user")
 
 @user_bp.route("/add", methods=["POST"])
-@swag_from(
-    {
-        "tags": ["User"],
-        "description": "Add a new user",
-        "parameters": [
-            {
-                "name": "body",
-                "in": "body",
-                "required": True,
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "name": {"type": "string"},
-                        "email": {"type": "string"},
-                        "phone_number": {"type": "string"},
-                    },
-                    "required": ["name", "email", "phone_number"],
-                },
-            }
-        ],
-        "responses": {
-            201: {"description": "User added successfully"},
-            400: {"description": "Bad request or user already exists"},
-            500: {"description": "Internal server error"},
-        },
-    }
-)
+@swag_from("swagger_docs/user/add_user.yml")
 def add_user():
     try:
         data = request.get_json()
@@ -53,13 +27,7 @@ def add_user():
 
 
 @user_bp.route("/", methods=["GET"])
-@swag_from(
-    {
-        "tags": ["User"],
-        "description": "Get all users",
-        "responses": {200: {"description": "List of users"}},
-    }
-)
+@swag_from("swagger_docs/user/get_all_users.yml")
 def get_all_users():
     """
     Get all registered users.
@@ -74,25 +42,7 @@ def get_all_users():
 
 
 @user_bp.route("/<int:user_id>", methods=["GET"])
-@swag_from(
-    {
-        "tags": ["User"],
-        "description": "Get user by ID",
-        "parameters": [
-            {
-                "name": "user_id",
-                "in": "path",
-                "type": "integer",
-                "required": True,
-                "description": "ID of the user to retrieve",
-            }
-        ],
-        "responses": {
-            200: {"description": "User found"},
-            404: {"description": "User not found"},
-        },
-    }
-)
+@swag_from("swagger_docs/user/get_user_by_id.yml")
 def get_user_by_id(user_id):
     """
     Get user by ID.
@@ -111,16 +61,7 @@ def get_user_by_id(user_id):
 
 
 @user_bp.route("/<int:user_id>", methods=["DELETE"])
-@swag_from(
-    {
-        "tags": ["User"],
-        "description": "Delete user by ID",
-        "responses": {
-            200: {"description": "User deleted successfully"},
-            404: {"description": "User not found"},
-        },
-    }
-)
+@swag_from("swagger_docs/user/delete_user.yml")
 def delete_user(user_id):
     """
     Delete user by ID.
