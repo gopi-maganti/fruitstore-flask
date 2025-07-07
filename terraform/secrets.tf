@@ -1,5 +1,5 @@
 resource "aws_secretsmanager_secret" "db_secret" {
-  name        = "fruitstore-db-secret-v6"
+  name        = "fruitstore-db-secret-v7"
   description = "PostgreSQL credentials for FruitStore app"
 }
 
