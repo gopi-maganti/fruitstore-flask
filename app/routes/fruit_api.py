@@ -25,7 +25,11 @@ def add_fruit_with_info():
         filename = secure_filename(file.filename)
         upload_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
         file.save(upload_path)
-        image_url = s3_utils.upload_image_to_s3(file)
+        image_url = s3_utils.upload_to_s3(
+            file=file,
+            bucket=os.getenv("S3_BUCKET_NAME"),
+            region=os.getenv("AWS_REGION")
+        )
 
         form_data = request.form.to_dict()
         form_data["has_seeds"] = request.form.get("has_seeds", "false").lower() == "true"

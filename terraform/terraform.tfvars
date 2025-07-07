@@ -9,3 +9,5 @@ ami_id           = "ami-08c40ec9ead489470"
 db_username      = "fruituser"
 db_password      = "SuperSecurePass123"
 db_name          = "fruitstore"
+
+s3_bucket_name   = "fruitstore-image-uploads"
