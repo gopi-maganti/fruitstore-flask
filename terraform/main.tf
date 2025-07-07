@@ -150,6 +150,13 @@ resource "aws_security_group" "fruitstore_sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
+  ingress {
+    description = "Allow PostgreSQL from EC2"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    security_groups = [aws_security_group.fruitstore_sg.id]
+  }
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
@@ -179,18 +186,34 @@ resource "aws_instance" "fruitstore_instance" {
     host        = self.public_ip
   }
 
-  provisioner "file" {
-    source      = "setup.sh"
-    destination = "/home/ubuntu/setup.sh"
-  }
-
   provisioner "remote-exec" {
     inline = [
-      "chmod +x setup.sh",
-      "./setup.sh"
+      "sudo apt-get update -y",
+      "sudo apt-get install -y python3-pip git",
+
+      # Clone repo
+      "git clone https://github.com/gopi-maganti/fruitstore-flask.git",
+      "cd fruitstore-flask",
+
+      # Install dependencies
+      "pip3 install --user -r requirements.txt",
+
+      # Ensure .env exists or handle securely
+      "echo 'USE_AWS_SECRET=true' > .env",
+      "echo 'AWS_SECRET_NAME=fruitstore-db-secret' >> .env",
+      "echo 'AWS_REGION=us-east-1' >> .env",
+      "echo 'S3_BUCKET_NAME=fruitstore-image-uploads' >> .env",
+
+      # Export manually if needed
+      "export USE_AWS_SECRET=true",
+      "export AWS_SECRET_NAME=fruitstore-db-secret",
+      "export AWS_REGION=us-east-1",
+      "export S3_BUCKET_NAME=fruitstore-image-uploads",
+
+      # Run Flask app in background
+      "nohup python3 run.py > app.log 2>&1 &"
     ]
   }
-
 
   tags = {
     Name = "FruitStoreEC2"
