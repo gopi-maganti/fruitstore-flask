@@ -174,23 +174,27 @@ resource "aws_instance" "fruitstore_instance" {
   provisioner "remote-exec" {
     inline = [
       "sudo apt-get update -y",
-      "sudo apt install -y python3-pip git postgresql postgresql-contrib",
+      "sudo apt-get install -y python3-pip git",
 
+      # Clone repo
       "git clone https://github.com/gopi-maganti/fruitstore-flask.git",
       "cd fruitstore-flask",
 
-      "pip3 install -r requirements.txt",
+      # Install dependencies
+      "pip3 install --user -r requirements.txt",
 
-      "export $(grep -v '^#' .env | xargs)",
-      "DB_USER=$(grep DB_USER .env | cut -d '=' -f2 | xargs)",
-      "DB_PASSWORD=$(grep DB_PASSWORD .env | cut -d '=' -f2 | xargs)",
-      "DB_NAME=$(grep DB_NAME .env | cut -d '=' -f2 | xargs)",
+      # Ensure .env exists or handle securely
+      "echo 'USE_AWS_SECRET=true' > .env",
+      "echo 'AWS_SECRET_NAME=fruitstore-db-secret' >> .env",
+      "echo 'AWS_REGION=us-east-1' >> .env",
 
-      "sudo -u postgres psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';\" || true",
-      "sudo -u postgres psql -c \"CREATE DATABASE $DB_NAME;\" || true",
-      "sudo -u postgres psql -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\"",
+      # Export manually if needed
+      "export USE_AWS_SECRET=true",
+      "export AWS_SECRET_NAME=fruitstore-db-secret",
+      "export AWS_REGION=us-east-1",
 
-      "nohup python3 run.py > output.log 2>&1 &"
+      # Run Flask app in background
+      "nohup python3 run.py > app.log 2>&1 &"
     ]
   }
 
