@@ -12,6 +12,14 @@ data "aws_iam_policy_document" "ec2_assume" {
   }
 }
 
+resource "aws_s3_bucket" "fruitstore_bucket" {
+  bucket = var.s3_bucket_name
+
+  tags = {
+    Name        = "FruitStore Image Uploads"
+  }
+}
+
 resource "aws_cloudwatch_log_group" "secret_access_logs" {
   name              = "/aws/fruitstore/secret_access"
   retention_in_days = 14
@@ -171,32 +179,18 @@ resource "aws_instance" "fruitstore_instance" {
     host        = self.public_ip
   }
 
+  provisioner "file" {
+    source      = "setup.sh"
+    destination = "/home/ubuntu/setup.sh"
+  }
+
   provisioner "remote-exec" {
     inline = [
-      "sudo apt-get update -y",
-      "sudo apt-get install -y python3-pip git",
-
-      # Clone repo
-      "git clone https://github.com/gopi-maganti/fruitstore-flask.git",
-      "cd fruitstore-flask",
-
-      # Install dependencies
-      "pip3 install --user -r requirements.txt",
-
-      # Ensure .env exists or handle securely
-      "echo 'USE_AWS_SECRET=true' > .env",
-      "echo 'AWS_SECRET_NAME=fruitstore-db-secret' >> .env",
-      "echo 'AWS_REGION=us-east-1' >> .env",
-
-      # Export manually if needed
-      "export USE_AWS_SECRET=true",
-      "export AWS_SECRET_NAME=fruitstore-db-secret",
-      "export AWS_REGION=us-east-1",
-
-      # Run Flask app in background
-      "nohup python3 run.py > app.log 2>&1 &"
+      "chmod +x setup.sh",
+      "./setup.sh"
     ]
   }
+
 
   tags = {
     Name = "FruitStoreEC2"
