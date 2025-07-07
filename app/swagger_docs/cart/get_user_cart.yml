@@ -1,0 +1,14 @@
+description: Get all cart items for a user
+parameters:
+- description: User ID
+  in: path
+  name: user_id
+  required: true
+  type: string
+responses:
+  200:
+    description: List of cart items
+  404:
+    description: No cart items found for the user
+tags:
+- Cart

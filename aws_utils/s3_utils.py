@@ -1,17 +1,10 @@
-import os
-import uuid
-from typing import str
-
 import boto3
-from botocore.exceptions import NoCredentialsError
-from werkzeug.datastructures import FileStorage
 
 # Initialize the S3 client using environment credentials
 s3 = boto3.client('s3')
-BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
 
 
-def upload_image_to_s3(file: FileStorage) -> str:
+def upload_to_s3(file, bucket, region, access_key=None, secret_key=None):
     """
     Uploads an image file to the configured AWS S3 bucket and returns the public URL.
 
@@ -24,26 +17,22 @@ def upload_image_to_s3(file: FileStorage) -> str:
     Raises:
         RuntimeError: If AWS credentials are missing or the upload fails.
     """
-    try:
-        from werkzeug.utils import secure_filename
+    import uuid
 
-        filename: str = secure_filename(file.filename)
-        unique_name: str = f"{uuid.uuid4().hex}_{filename}"
+    import boto3
+    from werkzeug.utils import secure_filename
 
-        s3.upload_fileobj(
-            file,
-            BUCKET_NAME,
-            unique_name,
-            ExtraArgs={
-                'ACL': 'public-read',
-                'ContentType': file.content_type
-            }
-        )
+    session = boto3.Session(
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        region_name=region
+    ) if access_key and secret_key else boto3.Session()
 
-        image_url: str = f"https://{BUCKET_NAME}.s3.amazonaws.com/{unique_name}"
-        return image_url
+    s3 = session.client('s3')
 
-    except NoCredentialsError:
-        raise RuntimeError("AWS credentials not found.")
-    except Exception as e:
-        raise RuntimeError(f"S3 Upload Failed: {str(e)}")
+    filename = secure_filename(file.filename)
+    unique_filename = f"{uuid.uuid4().hex}_{filename}"
+    key = f"fruit-images/{unique_filename}"  # <--- use your prefix here
+
+    s3.upload_fileobj(file, bucket, key, ExtraArgs={"ACL": "public-read"})
+    return f"https://{bucket}.s3.{region}.amazonaws.com/{key}"

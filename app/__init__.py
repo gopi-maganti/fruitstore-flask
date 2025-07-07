@@ -4,14 +4,16 @@ from flasgger import Swagger
 from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
+from app.utils.log_config import setup_logging
+from app.config.config import Config
 
 db = SQLAlchemy()
 
 
 def create_app():
+    setup_logging()
     app = Flask(__name__)
-    app.config.from_object("config.Config")
+    app.config.from_object(Config)
 
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
@@ -25,15 +27,10 @@ def create_app():
 
     Swagger(app)
 
-    @app.before_request
-    def before_request():
-        if "sqlite" in str(db.engine.url):
-            db.session.execute(text("PRAGMA foreign_keys=ON"))
-
-    from app.apis.cart_api import cart_bp
-    from app.apis.fruit_api import fruit_bp
-    from app.apis.order_api import order_bp
-    from app.apis.user_api import user_bp
+    from app.routes.cart_api import cart_bp
+    from app.routes.fruit_api import fruit_bp
+    from app.routes.order_api import order_bp
+    from app.routes.user_api import user_bp
 
     app.register_blueprint(fruit_bp, url_prefix="/fruit")
     app.register_blueprint(user_bp, url_prefix="/user")
@@ -42,12 +39,11 @@ def create_app():
 
     with app.app_context():
         db.create_all()
-        seed_guest_user()  # <-- this ensures guest user exists
+        seed_guest_user()
 
     return app
 
 
-# 🔽 Function to create the guest user if it doesn't exist
 def seed_guest_user():
     from app.models.users import User
 

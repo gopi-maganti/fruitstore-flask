@@ -1,0 +1,23 @@
+description: Update quantity of a cart item
+parameters:
+- in: path
+  name: cart_id
+  required: true
+  type: integer
+- in: body
+  name: body
+  required: true
+  schema:
+    properties:
+      quantity:
+        type: integer
+    required:
+    - quantity
+    type: object
+responses:
+  200:
+    description: Cart item updated successfully
+  404:
+    description: Cart item not found
+tags:
+- Cart

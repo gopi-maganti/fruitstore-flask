@@ -2,12 +2,12 @@ from flasgger import swag_from
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
-from app import db
-from app.models.users import User
-from app.schemas.user_validation import UserValidation
+from app.services import user_service
+from app.utils.log_config import get_logger
+from app.validations.user_validation import UserValidation
 
 user_bp = Blueprint("user_bp", __name__)
-
+logger = get_logger("user")
 
 @user_bp.route("/add", methods=["POST"])
 @swag_from(
@@ -40,30 +40,16 @@ user_bp = Blueprint("user_bp", __name__)
 def add_user():
     try:
         data = request.get_json()
-        validated_data = UserValidation(**data)
-
-        user = User(
-            name=validated_data.name,
-            email=validated_data.email,
-            phone_number=validated_data.phone_number,
-        )
-        user.save()
-        return (
-            jsonify(
-                {"message": f"User added successfully with USER ID: {user.user_id}"}
-            ),
-            201,
-        )
-
+        validated = UserValidation(**data)
+        user = user_service.create_user(validated.name, validated.email, validated.phone_number)
+        logger.info("User created", user_id=user.user_id)
+        return jsonify({"message": "User created", "user": user.to_dict()}), 201
     except ValidationError as ve:
-        return jsonify({"error": "Validation Error", "details": str(ve)}), 400
-
-    except ValueError as e:
-        return jsonify({"error": "Validation Error", "details": str(e)}), 400
-
+        logger.warning("Validation failed", errors=ve.errors())
+        return jsonify({"error": "Validation error", "details": ve.errors()}), 400
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": "Internal Server Error", "details": str(e)}), 500
+        logger.exception("Unhandled error creating user")
+        return jsonify({"error": str(e)}), 500
 
 
 @user_bp.route("/", methods=["GET"])
@@ -74,9 +60,17 @@ def add_user():
         "responses": {200: {"description": "List of users"}},
     }
 )
-def get_users():
-    users = User.query.all()
-    return jsonify([u.to_dict() for u in users]), 200
+def get_all_users():
+    """
+    Get all registered users.
+    """
+    try:
+        users = user_service.get_all_users()
+        logger.info("Fetched all users", count=len(users))
+        return jsonify([u.to_dict() for u in users]), 200
+    except Exception as e:
+        logger.exception("Error fetching users")
+        return jsonify({"error": str(e)}), 500
 
 
 @user_bp.route("/<int:user_id>", methods=["GET"])
@@ -99,11 +93,21 @@ def get_users():
         },
     }
 )
-def get_user(user_id):
-    user = User.query.get(user_id)
-    if user:
-        return jsonify(user.to_dict()), 200
-    return jsonify({"error": "User not found"}), 404
+def get_user_by_id(user_id):
+    """
+    Get user by ID.
+    """
+    try:
+        user = user_service.get_user_by_id(user_id)
+        if user:
+            logger.info("User found", user_id=user_id)
+            return jsonify(user.to_dict()), 200
+        else:
+            logger.warning("User not found", user_id=user_id)
+            return jsonify({"error": "User not found"}), 404
+    except Exception as e:
+        logger.exception("Error retrieving user")
+        return jsonify({"error": str(e)}), 500
 
 
 @user_bp.route("/<int:user_id>", methods=["DELETE"])
@@ -118,10 +122,17 @@ def get_user(user_id):
     }
 )
 def delete_user(user_id):
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-
-    db.session.delete(user)
-    db.session.commit()
-    return jsonify({"message": "User deleted successfully"}), 200
+    """
+    Delete user by ID.
+    """
+    try:
+        deleted = user_service.delete_user_by_id(user_id)
+        if deleted:
+            logger.info("User deleted", user_id=user_id)
+            return jsonify({"message": "User deleted"}), 200
+        else:
+            logger.warning("User not found for deletion", user_id=user_id)
+            return jsonify({"error": "User not found"}), 404
+    except Exception as e:
+        logger.exception("Error deleting user")
+        return jsonify({"error": str(e)}), 500

@@ -1,0 +1,6 @@
+description: Get all users
+responses:
+  200:
+    description: List of users
+tags:
+- User

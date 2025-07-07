@@ -1,0 +1,13 @@
+description: Delete a specific cart item
+parameters:
+- in: path
+  name: cart_id
+  required: true
+  type: integer
+responses:
+  200:
+    description: Cart item deleted
+  404:
+    description: Cart item not found
+tags:
+- Cart

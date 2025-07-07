@@ -1,0 +1,23 @@
+description: Delete multiple fruits by IDs
+parameters:
+- in: body
+  name: body
+  required: true
+  schema:
+    properties:
+      ids:
+        items:
+          type: integer
+        type: array
+    required:
+    - ids
+    type: object
+responses:
+  200:
+    description: Fruit(s) deleted successfully
+  400:
+    description: No fruit IDs provided
+  500:
+    description: Internal Server Error
+tags:
+- Fruit
