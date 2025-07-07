@@ -12,7 +12,7 @@ class Config:
     otherwise falls back to .env values.
     """
 
-    USE_AWS_SECRET = os.getenv("USE_AWS_SECRET", "true").lower() == "true"
+    USE_AWS_SECRET = os.getenv("USE_AWS_SECRET", "false").lower() == "true"
 
     if USE_AWS_SECRET:
         secret_name = os.getenv("AWS_SECRET_NAME", "fruitstore-db-secret")
@@ -29,7 +29,7 @@ class Config:
     else:
         DB_USER = os.getenv("DB_USER")
         DB_PASSWORD = os.getenv("DB_PASSWORD")
-        DB_HOST = os.getenv("DB_HOST", "localhost")
+        DB_HOST = os.getenv("DB_HOST", "fruitstore-db.611771051034.us-east-1.rds.amazonaws.com")
         DB_PORT = os.getenv("DB_PORT", "5432")
         DB_NAME = os.getenv("DB_NAME")
 
