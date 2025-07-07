@@ -29,7 +29,7 @@ class Config:
     else:
         DB_USER = os.getenv("DB_USER")
         DB_PASSWORD = os.getenv("DB_PASSWORD")
-        DB_HOST = os.getenv("DB_HOST", "fruitstore-db.611771051034.us-east-1.rds.amazonaws.com")
+        DB_HOST = os.getenv("DB_HOST", "fruitstore-cluster.cluster-c69cq4mcm794.us-east-1.rds.amazonaws.com")
         DB_PORT = os.getenv("DB_PORT", "5432")
         DB_NAME = os.getenv("DB_NAME")
 

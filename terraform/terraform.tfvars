@@ -7,5 +7,5 @@ private_key_path = "/Users/gopikrishnamaganti/.ssh/id_rsa"
 ami_id           = "ami-08c40ec9ead489470"
 
 db_username      = "fruituser"
-db_password      = "fruitpass123"
+db_password      = "SuperSecurePass123"
 db_name          = "fruitstore"

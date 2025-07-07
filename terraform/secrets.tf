@@ -1,5 +1,5 @@
 resource "aws_secretsmanager_secret" "db_secret" {
-  name        = "fruitstore-db-secret-v7"
+  name        = "fruitstore-db-secret-v8"
   description = "PostgreSQL credentials for FruitStore app"
 }
 
@@ -9,7 +9,7 @@ resource "aws_secretsmanager_secret_version" "db_secret_version" {
     username = "fruituser",
     password = "SuperSecurePass123",
     engine   = "postgres"
-    host     = "fruitstore-db.611771051034.us-east-1.rds.amazonaws.com"
+    host     = "fruitstore-cluster.cluster-c69cq4mcm794.us-east-1.rds.amazonaws.com"
     port     = 5432
     dbname   = "fruitstore"
   })
