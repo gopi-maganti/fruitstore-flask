@@ -15,7 +15,3 @@ resource "aws_secretsmanager_secret_version" "db_secret_version" {
     dbname   = "fruitstore"
   })
 }
-
-output "secret_arn" {
-  value = aws_secretsmanager_secret.db_secret.arn
-}

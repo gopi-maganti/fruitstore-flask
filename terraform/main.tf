@@ -12,23 +12,6 @@ data "aws_iam_policy_document" "ec2_assume" {
   }
 }
 
-resource "aws_secretsmanager_secret" "db_secret" {
-  name        = "fruitstore-db-secret"
-  description = "Database credentials for Fruitstore"
-}
-
-resource "aws_secretsmanager_secret_version" "db_secret_version" {
-  secret_id     = aws_secretsmanager_secret.db_secret.id
-  secret_string = jsonencode({
-    username = "fruituser",
-    password = "SuperSecurePass123",
-    engine   = "postgres",
-    host     = "localhost",
-    port     = 5432,
-    dbname   = "fruitstore"
-  })
-}
-
 resource "aws_cloudwatch_log_group" "secret_access_logs" {
   name              = "/aws/fruitstore/secret_access"
   retention_in_days = 14
@@ -112,31 +95,47 @@ resource "aws_security_group" "fruitstore_sg" {
   }
 }
 
-resource "aws_iam_role" "fruitstore_role" {
-  name = "fruitstore-role"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
-}
+resource "aws_instance" "fruitstore_instance" {
+  ami                         = var.ami_id
+  instance_type               = "t2.micro"
+  key_name                    = aws_key_pair.fruitstore_key_pair.key_name
+  subnet_id                   = aws_subnet.fruitstore_subnet.id
+  vpc_security_group_ids      = [aws_security_group.fruitstore_sg.id]
+  iam_instance_profile        = aws_iam_instance_profile.fruitstore_profile.name
+  associate_public_ip_address = true
 
-resource "aws_iam_policy" "secrets_policy" {
-  name   = "FruitstoreSecretsAccess"
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect   = "Allow",
-        Action   = ["secretsmanager:GetSecretValue", "logs:PutLogEvents"],
-        Resource = "*"
-      }
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"
+    private_key = file(var.private_key_path)
+    host        = self.public_ip
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get update -y",
+      "sudo apt-get install -y python3-pip git postgresql postgresql-contrib",
+
+      "git clone https://github.com/gopi-maganti/fruitstore-flask.git",
+      "cd fruitstore-flask",
+
+      "pip3 install -r requirements.txt",
+      "pip3 install python-dotenv",
+
+      "export $(grep -v '^#' .env | xargs)",
+      "DB_USER=$(grep DB_USER .env | cut -d '=' -f2 | xargs)",
+      "DB_PASSWORD=$(grep DB_PASSWORD .env | cut -d '=' -f2 | xargs)",
+      "DB_NAME=$(grep DB_NAME .env | cut -d '=' -f2 | xargs)",
+
+      "sudo -u postgres psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';\" || true",
+      "sudo -u postgres psql -c \"CREATE DATABASE $DB_NAME;\" || true",
+      "sudo -u postgres psql -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\"",
+
+      "nohup python3 run.py > output.log 2>&1 &"
     ]
-  })
-}
+  }
 
-resource "aws_iam_role_policy_attachment" "secrets_attach" {
-  role       = aws_iam_role.fruitstore_role.name
-  policy_arn = aws_iam_policy.secrets_policy.arn
-}
-
-resource "aws_iam_instance_profile" "fruitstore_profile" {
-  name = "fruitstore-instance-profile"
-  role = aws_iam_role.fruitstore_role.name
+  tags = {
+    Name = "FruitStoreEC2"
+  }
 }
