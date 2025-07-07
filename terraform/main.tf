@@ -39,6 +39,14 @@ resource "aws_subnet" "fruitstore_subnet" {
   map_public_ip_on_launch = true
 }
 
+resource "aws_db_subnet_group" "fruitstore_subnets" {
+  name       = "fruitstore-db-subnet-group"
+  subnet_ids = [aws_subnet.fruitstore_subnet.id]  # usually you'd want 2+ in different AZs
+  tags = {
+    Name = "FruitStore DB Subnet Group"
+  }
+}
+
 resource "aws_internet_gateway" "fruitstore_IGW" {
   vpc_id = aws_vpc.fruitstore_vpc.id
 }
@@ -95,6 +103,26 @@ resource "aws_security_group" "fruitstore_sg" {
   }
 }
 
+resource "aws_db_instance" "fruitstore_db" {
+  identifier         = "fruitstore-db"
+  engine             = "postgres"
+  instance_class     = "db.t3.micro"
+  username           = var.db_username
+  password           = var.db_password
+  db_name            = var.db_name
+  allocated_storage  = 20
+  publicly_accessible = true
+
+  vpc_security_group_ids = [aws_security_group.fruitstore_sg.id]
+  db_subnet_group_name   = aws_db_subnet_group.fruitstore_subnets.name
+
+  skip_final_snapshot = true
+
+  tags = {
+    Name = "FruitStoreDB"
+  }
+}
+
 resource "aws_instance" "fruitstore_instance" {
   ami                         = var.ami_id
   instance_type               = "t2.micro"
@@ -120,7 +148,6 @@ resource "aws_instance" "fruitstore_instance" {
       "cd fruitstore-flask",
 
       "pip3 install -r requirements.txt",
-      "pip3 install python-dotenv",
 
       "export $(grep -v '^#' .env | xargs)",
       "DB_USER=$(grep DB_USER .env | cut -d '=' -f2 | xargs)",
