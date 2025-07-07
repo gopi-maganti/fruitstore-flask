@@ -174,7 +174,7 @@ resource "aws_instance" "fruitstore_instance" {
   provisioner "remote-exec" {
     inline = [
       "sudo apt-get update -y",
-      "sudo apt-get install -y python3-pip git postgresql postgresql-contrib",
+      "sudo apt install -y python3-pip git postgresql postgresql-contrib",
 
       "git clone https://github.com/gopi-maganti/fruitstore-flask.git",
       "cd fruitstore-flask",
