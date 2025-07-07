@@ -12,7 +12,7 @@ class Config:
     otherwise falls back to .env values.
     """
 
-    USE_AWS_SECRET = os.getenv("USE_AWS_SECRET", "false").lower() == "true"
+    USE_AWS_SECRET = os.getenv("USE_AWS_SECRET", "true").lower() == "true"
 
     if USE_AWS_SECRET:
         secret_name = os.getenv("AWS_SECRET_NAME", "fruitstore-db-secret")

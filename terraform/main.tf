@@ -17,12 +17,26 @@ resource "aws_cloudwatch_log_group" "secret_access_logs" {
   retention_in_days = 14
 }
 
+resource "aws_vpc_dhcp_options" "fruitstore_dhcp" {
+  domain_name         = "ec2.internal"
+  domain_name_servers = ["AmazonProvidedDNS"]
+}
+
+resource "aws_vpc_dhcp_options_association" "fruitstore_dhcp_assoc" {
+  vpc_id          = aws_vpc.fruitstore_vpc.id
+  dhcp_options_id = aws_vpc_dhcp_options.fruitstore_dhcp.id
+}
+
 resource "aws_vpc" "fruitstore_vpc" {
-  cidr_block = var.vpc_cidr
+  cidr_block           = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
+
   tags = {
     Name = "FruitStoreVPC"
   }
 }
+
 
 resource "aws_key_pair" "fruitstore_key_pair" {
   key_name   = "fruitstore_key"
@@ -32,19 +46,51 @@ resource "aws_key_pair" "fruitstore_key_pair" {
   }
 }
 
-resource "aws_subnet" "fruitstore_subnet" {
-  vpc_id                  = aws_vpc.fruitstore_vpc.id
-  cidr_block              = "10.0.0.0/24"
-  availability_zone       = "us-east-1a"
+resource "aws_subnet" "fruitstore_subnet_1a" {
+  vpc_id            = aws_vpc.fruitstore_vpc.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "us-east-1a"
   map_public_ip_on_launch = true
 }
 
-resource "aws_db_subnet_group" "fruitstore_subnets" {
+resource "aws_subnet" "fruitstore_subnet_1b" {
+  vpc_id            = aws_vpc.fruitstore_vpc.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "us-east-1b"
+  map_public_ip_on_launch = true
+}
+
+resource "aws_db_subnet_group" "fruitstore_subnet_group" {
   name       = "fruitstore-db-subnet-group"
-  subnet_ids = [aws_subnet.fruitstore_subnet.id]  # usually you'd want 2+ in different AZs
+  subnet_ids = [
+    aws_subnet.fruitstore_subnet_1a.id,
+    aws_subnet.fruitstore_subnet_1b.id
+  ]
+
   tags = {
-    Name = "FruitStore DB Subnet Group"
+    Name = "FruitStoreDBSubnetGroup"
   }
+}
+
+resource "aws_rds_cluster" "fruitstore_cluster" {
+  cluster_identifier      = "fruitstore-cluster"
+  engine                  = "aurora-postgresql"
+  engine_mode             = "provisioned"
+  master_username         = var.db_username
+  master_password         = var.db_password
+  database_name           = var.db_name
+  db_subnet_group_name    = aws_db_subnet_group.fruitstore_subnet_group.name
+  vpc_security_group_ids  = [aws_security_group.fruitstore_sg.id]
+  skip_final_snapshot     = true
+}
+
+resource "aws_rds_cluster_instance" "fruitstore_instance" {
+  identifier              = "fruitstore-instance-1"
+  cluster_identifier      = aws_rds_cluster.fruitstore_cluster.id
+  instance_class          = "db.t3.medium"
+  engine                  = "aurora-postgresql"
+  publicly_accessible     = true
+  db_subnet_group_name    = aws_db_subnet_group.fruitstore_subnet_group.name
 }
 
 resource "aws_internet_gateway" "fruitstore_IGW" {
@@ -59,10 +105,16 @@ resource "aws_route_table" "fruitstore_RT" {
   }
 }
 
-resource "aws_route_table_association" "fruitstore_RTA" {
-  subnet_id      = aws_subnet.fruitstore_subnet.id
+resource "aws_route_table_association" "fruitstore_RTA_1a" {
+  subnet_id      = aws_subnet.fruitstore_subnet_1a.id
   route_table_id = aws_route_table.fruitstore_RT.id
 }
+
+resource "aws_route_table_association" "fruitstore_RTA_1b" {
+  subnet_id      = aws_subnet.fruitstore_subnet_1b.id
+  route_table_id = aws_route_table.fruitstore_RT.id
+}
+
 
 resource "aws_security_group" "fruitstore_sg" {
   name        = "fruitstore_sg"
@@ -103,31 +155,11 @@ resource "aws_security_group" "fruitstore_sg" {
   }
 }
 
-resource "aws_db_instance" "fruitstore_db" {
-  identifier         = "fruitstore-db"
-  engine             = "postgres"
-  instance_class     = "db.t3.micro"
-  username           = var.db_username
-  password           = var.db_password
-  db_name            = var.db_name
-  allocated_storage  = 20
-  publicly_accessible = true
-
-  vpc_security_group_ids = [aws_security_group.fruitstore_sg.id]
-  db_subnet_group_name   = aws_db_subnet_group.fruitstore_subnets.name
-
-  skip_final_snapshot = true
-
-  tags = {
-    Name = "FruitStoreDB"
-  }
-}
-
 resource "aws_instance" "fruitstore_instance" {
   ami                         = var.ami_id
   instance_type               = "t2.micro"
   key_name                    = aws_key_pair.fruitstore_key_pair.key_name
-  subnet_id                   = aws_subnet.fruitstore_subnet.id
+  subnet_id                   = aws_subnet.fruitstore_subnet_1a.id
   vpc_security_group_ids      = [aws_security_group.fruitstore_sg.id]
   iam_instance_profile        = aws_iam_instance_profile.fruitstore_profile.name
   associate_public_ip_address = true
