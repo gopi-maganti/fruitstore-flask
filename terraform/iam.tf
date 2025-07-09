@@ -29,7 +29,10 @@ resource "aws_iam_policy" "fruitstore_combined_policy" {
         Action = [
           "s3:PutObject",
           "s3:GetObject",
-          "s3:ListBucket"
+          "s3:ListBucket",
+          "s3:CreateBucket",
+          "s3:DeleteObject",
+          "s3:DeleteBucket",
         ],
         Resource = [
           "arn:aws:s3:::fruitstore-image-uploads",

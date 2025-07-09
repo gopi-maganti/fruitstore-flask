@@ -28,7 +28,8 @@ def add_fruit_with_info():
         image_url = s3_utils.upload_to_s3(
             file=file,
             bucket=os.getenv("S3_BUCKET_NAME"),
-            region=os.getenv("AWS_REGION")
+            region=os.getenv("AWS_REGION"),
+            key=f"fruit_images/{filename}"
         )
 
         form_data = request.form.to_dict()

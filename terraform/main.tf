@@ -155,7 +155,6 @@ resource "aws_security_group" "fruitstore_sg" {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    security_groups = [aws_security_group.fruitstore_sg.id]
   }
   egress {
     description = "Allow all outbound traffic"
@@ -200,13 +199,13 @@ resource "aws_instance" "fruitstore_instance" {
 
       # Ensure .env exists or handle securely
       "echo 'USE_AWS_SECRET=true' > .env",
-      "echo 'AWS_SECRET_NAME=fruitstore-db-secret' >> .env",
+      "echo 'AWS_SECRET_NAME=fruitstore-db-secret-v9' >> .env",
       "echo 'AWS_REGION=us-east-1' >> .env",
       "echo 'S3_BUCKET_NAME=fruitstore-image-uploads' >> .env",
 
       # Export manually if needed
       "export USE_AWS_SECRET=true",
-      "export AWS_SECRET_NAME=fruitstore-db-secret",
+      "export AWS_SECRET_NAME=fruitstore-db-secret-v9",
       "export AWS_REGION=us-east-1",
       "export S3_BUCKET_NAME=fruitstore-image-uploads",
 

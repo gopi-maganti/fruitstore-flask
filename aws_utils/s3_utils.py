@@ -35,7 +35,8 @@ def upload_to_s3(file, bucket, region, access_key=None, secret_key=None):
         unique_filename = f"{uuid.uuid4().hex}_{filename}"
         key = f"fruit-images/{unique_filename}"
 
-        s3_client.upload_fileobj(file, bucket, key, ExtraArgs={"ACL": "public-read"})
+        file.seek(0)
+        s3_client.upload_fileobj(file, bucket, key)
 
         return f"https://{bucket}.s3.{region}.amazonaws.com/{key}"
 
