@@ -3,19 +3,14 @@ import os
 from flasgger import Swagger
 from flask import Flask
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 from app.utils.log_config import setup_logging
 from app.config.config import Config
-
-db = SQLAlchemy()
-
+from app.extensions import db
 
 def create_app():
     setup_logging()
     app = Flask(__name__)
     app.config.from_object(Config)
-
-    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     db.init_app(app)
     CORS(
@@ -24,6 +19,8 @@ def create_app():
         resources={r"/*": {"origins": "*"}},
         methods=["GET", "POST", "PUT", "DELETE"],
     )
+
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     Swagger(app)
 
