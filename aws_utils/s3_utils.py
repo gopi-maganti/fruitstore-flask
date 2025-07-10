@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 # Default S3 client for non-authenticated environments
 s3 = boto3.client("s3")
 
-def upload_to_s3(file, bucket, region, access_key=None, secret_key=None):
+def upload_to_s3(file, bucket, region, key, access_key=None, secret_key=None):
     """
     Uploads an image file to AWS S3 and returns the public URL.
 
@@ -13,6 +13,7 @@ def upload_to_s3(file, bucket, region, access_key=None, secret_key=None):
         file (FileStorage): The uploaded image file.
         bucket (str): Target S3 bucket.
         region (str): AWS region.
+        key (str): S3 object key (path in the bucket).
         access_key (str, optional): AWS Access Key.
         secret_key (str, optional): AWS Secret Key.
 
