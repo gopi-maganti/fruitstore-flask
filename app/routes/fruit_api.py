@@ -1,8 +1,9 @@
 import os
 from datetime import datetime
+import uuid
 
 from flasgger import swag_from
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, jsonify, request
 from werkzeug.utils import secure_filename
 
 import aws_utils.s3_utils as s3_utils
@@ -22,14 +23,15 @@ def add_fruit_with_info():
             logger.warning("Image file missing")
             return jsonify({"error": "No image file received"}), 400
 
+        # Reset stream pointer just in case
+        file.stream.seek(0)
+
         filename = secure_filename(file.filename)
-        upload_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
-        file.save(upload_path)
         image_url = s3_utils.upload_to_s3(
             file=file,
             bucket=os.getenv("S3_BUCKET_NAME"),
             region=os.getenv("AWS_REGION"),
-            key=f"fruit_images/{filename}"
+            key=f"fruit-images/{uuid.uuid4().hex}_{filename}"
         )
 
         form_data = request.form.to_dict()
@@ -39,10 +41,12 @@ def add_fruit_with_info():
             form_data["weight"] = float(form_data["weight"])
             form_data["price"] = float(form_data["price"])
             form_data["total_quantity"] = int(form_data["total_quantity"])
-            form_data["available_quantity"] = int(request.form.get("available_quantity") or form_data["total_quantity"])
+            form_data["available_quantity"] = int(
+                request.form.get("available_quantity") or form_data["total_quantity"]
+            )
             form_data["sell_by_date"] = datetime.strptime(form_data["sell_by_date"], "%Y-%m-%d").date()
         except Exception as e:
-            logger.warning("Invalid numeric or date field", error=str(e))
+            logger.warning("Invalid numeric or date field", extra={"error": str(e)})
             return jsonify({"error": "Invalid field", "details": str(e)}), 400
 
         if form_data["sell_by_date"] <= datetime.utcnow().date():
@@ -57,7 +61,7 @@ def add_fruit_with_info():
         }), 201
 
     except ValueError as ve:
-        logger.warning("Business validation failed", reason=str(ve))
+        logger.warning("Business validation failed", extra={"reason": str(ve)})
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
         logger.exception("Upload failed")
