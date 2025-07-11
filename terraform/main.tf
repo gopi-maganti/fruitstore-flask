@@ -13,35 +13,6 @@ data "aws_iam_policy_document" "ec2_assume" {
   }
 }
 
-resource "aws_iam_role" "fruitstore_role" {
-  name               = "fruitstore_ec2_role"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume.json
-}
-
-resource "aws_iam_instance_profile" "fruitstore_profile" {
-  name = "fruitstore_instance_profile"
-  role = aws_iam_role.fruitstore_role.name
-}
-
-resource "aws_iam_policy" "secret_access" {
-  name = "fruitstore_secret_access"
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect   = "Allow",
-        Action   = ["secretsmanager:GetSecretValue"],
-        Resource = "*" # You can restrict this to specific secret ARN if needed
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "attach_secret_policy" {
-  role       = aws_iam_role.fruitstore_role.name
-  policy_arn = aws_iam_policy.secret_access.arn
-}
-
 # S3 Bucket
 resource "aws_s3_bucket" "fruitstore_bucket" {
   bucket = var.s3_bucket_name
@@ -127,7 +98,8 @@ resource "aws_db_subnet_group" "fruitstore_subnet_group" {
   }
 }
 
-# Security group
+# Define security group first without the self-reference
+
 resource "aws_security_group" "fruitstore_sg" {
   name        = "fruitstore_sg"
   description = "Security group for FruitStore application"
@@ -157,14 +129,6 @@ resource "aws_security_group" "fruitstore_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ingress {
-    description     = "Allow PostgreSQL from same security group (EC2)"
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.fruitstore_sg.id]
-  }
-
   egress {
     description = "Allow all outbound traffic"
     from_port   = 0
@@ -177,6 +141,18 @@ resource "aws_security_group" "fruitstore_sg" {
     Name = "FruitStoreSG"
   }
 }
+
+# Define PostgreSQL access from this same SG
+resource "aws_security_group_rule" "postgres_from_same_sg" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.fruitstore_sg.id
+  source_security_group_id = aws_security_group.fruitstore_sg.id
+  description              = "Allow PostgreSQL from EC2 with same SG"
+}
+
 
 # RDS cluster
 resource "aws_rds_cluster" "fruitstore_cluster" {
