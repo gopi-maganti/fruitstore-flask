@@ -15,7 +15,7 @@ class Config:
     USE_AWS_SECRET = os.getenv("USE_AWS_SECRET", "false").lower() == "true"
 
     if USE_AWS_SECRET:
-        secret_name = os.getenv("AWS_SECRET_NAME", "fruitstore-db-secret-v11")
+        secret_name = os.getenv("AWS_SECRET_NAME", "fruitstore-db-secret")
         region = os.getenv("AWS_REGION", "us-east-1")
         try:
             secret = get_db_credentials(secret_name, region)
