@@ -2,18 +2,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# IAM Role for EC2 to access Secrets Manager
-data "aws_iam_policy_document" "ec2_assume" {
-  statement {
-    actions = ["sts:AssumeRole"]
-    principals {
-      type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
-    }
-  }
-}
-
-# S3 Bucket
 resource "aws_s3_bucket" "fruitstore_bucket" {
   bucket = var.s3_bucket_name
 
@@ -27,78 +15,15 @@ resource "aws_cloudwatch_log_group" "secret_access_logs" {
   retention_in_days = 14
 }
 
-# Networking
-resource "aws_vpc" "fruitstore_vpc" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-
-  tags = {
-    Name = "FruitStoreVPC"
-  }
+resource "aws_cloudwatch_log_group" "fruitstore_app_logs" {
+  name              = "/aws/fruitstore/app"
+  retention_in_days = 14
 }
 
-resource "aws_vpc_dhcp_options" "fruitstore_dhcp" {
-  domain_name         = "ec2.internal"
-  domain_name_servers = ["AmazonProvidedDNS"]
+resource "aws_cloudwatch_log_group" "fruitstore_metrics" {
+  name              = "/aws/fruitstore/metrics"
+  retention_in_days = 14
 }
-
-resource "aws_vpc_dhcp_options_association" "fruitstore_dhcp_assoc" {
-  vpc_id          = aws_vpc.fruitstore_vpc.id
-  dhcp_options_id = aws_vpc_dhcp_options.fruitstore_dhcp.id
-}
-
-resource "aws_subnet" "fruitstore_subnet_1a" {
-  vpc_id                  = aws_vpc.fruitstore_vpc.id
-  cidr_block              = "10.0.1.0/24"
-  availability_zone       = "us-east-1a"
-  map_public_ip_on_launch = true
-}
-
-resource "aws_subnet" "fruitstore_subnet_1b" {
-  vpc_id                  = aws_vpc.fruitstore_vpc.id
-  cidr_block              = "10.0.2.0/24"
-  availability_zone       = "us-east-1b"
-  map_public_ip_on_launch = true
-}
-
-resource "aws_internet_gateway" "fruitstore_IGW" {
-  vpc_id = aws_vpc.fruitstore_vpc.id
-}
-
-resource "aws_route_table" "fruitstore_RT" {
-  vpc_id = aws_vpc.fruitstore_vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.fruitstore_IGW.id
-  }
-}
-
-resource "aws_route_table_association" "fruitstore_RTA_1a" {
-  subnet_id      = aws_subnet.fruitstore_subnet_1a.id
-  route_table_id = aws_route_table.fruitstore_RT.id
-}
-
-resource "aws_route_table_association" "fruitstore_RTA_1b" {
-  subnet_id      = aws_subnet.fruitstore_subnet_1b.id
-  route_table_id = aws_route_table.fruitstore_RT.id
-}
-
-# Subnet group for RDS
-resource "aws_db_subnet_group" "fruitstore_subnet_group" {
-  name       = "fruitstore-db-subnet-group"
-  subnet_ids = [
-    aws_subnet.fruitstore_subnet_1a.id,
-    aws_subnet.fruitstore_subnet_1b.id
-  ]
-
-  tags = {
-    Name = "FruitStoreDBSubnetGroup"
-  }
-}
-
-# Define security group first without the self-reference
 
 resource "aws_security_group" "fruitstore_sg" {
   name        = "fruitstore_sg"
@@ -142,7 +67,6 @@ resource "aws_security_group" "fruitstore_sg" {
   }
 }
 
-# Define PostgreSQL access from this same SG
 resource "aws_security_group_rule" "postgres_from_same_sg" {
   type                     = "ingress"
   from_port                = 5432
@@ -153,30 +77,23 @@ resource "aws_security_group_rule" "postgres_from_same_sg" {
   description              = "Allow PostgreSQL from EC2 with same SG"
 }
 
-
-# RDS cluster
-resource "aws_rds_cluster" "fruitstore_cluster" {
-  cluster_identifier     = "fruitstore-cluster"
-  engine                 = "aurora-postgresql"
-  engine_mode            = "provisioned"
-  master_username        = var.db_username
-  master_password        = var.db_password
-  database_name          = var.db_name
-  db_subnet_group_name   = aws_db_subnet_group.fruitstore_subnet_group.name
-  vpc_security_group_ids = [aws_security_group.fruitstore_sg.id]
-  skip_final_snapshot    = true
+resource "aws_db_instance" "fruitstore_instance" {
+  identifier              = "fruitstore-pg-instance"
+  engine                  = "postgres"
+  instance_class          = "db.t3.micro"
+  username                = var.db_username
+  password                = var.db_password
+  db_name                 = var.db_name
+  publicly_accessible     = true
+  allocated_storage       = 20
+  storage_type            = "gp2"
+  db_subnet_group_name    = aws_db_subnet_group.fruitstore_subnet_group.name
+  vpc_security_group_ids  = [aws_security_group.fruitstore_sg.id]
+  skip_final_snapshot     = true
+  deletion_protection     = false
+  multi_az                = false
 }
 
-resource "aws_rds_cluster_instance" "fruitstore_instance" {
-  identifier           = "fruitstore-instance-1"
-  cluster_identifier   = aws_rds_cluster.fruitstore_cluster.id
-  instance_class       = "db.t3.medium"
-  engine               = "aurora-postgresql"
-  publicly_accessible  = true
-  db_subnet_group_name = aws_db_subnet_group.fruitstore_subnet_group.name
-}
-
-# Key pair for SSH
 resource "aws_key_pair" "fruitstore_key_pair" {
   key_name   = "fruitstore_key"
   public_key = file("/Users/gopikrishnamaganti/.ssh/id_rsa.pub")
@@ -186,7 +103,6 @@ resource "aws_key_pair" "fruitstore_key_pair" {
   }
 }
 
-# EC2 Instance
 resource "aws_instance" "fruitstore_instance" {
   ami                         = var.ami_id
   instance_type               = "t2.micro"
@@ -196,31 +112,67 @@ resource "aws_instance" "fruitstore_instance" {
   iam_instance_profile        = aws_iam_instance_profile.fruitstore_profile.name
   associate_public_ip_address = true
 
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file(var.private_key_path)
-    host        = self.public_ip
-  }
+  user_data = <<-EOF
+              #!/bin/bash
+              exec > >(tee /var/log/user-data.log|logger -t user-data ) 2>&1
+              sudo apt-get update -y
+              sudo apt-get install -y python3-pip git awscli jq amazon-cloudwatch-agent
+              cd /home/ubuntu
+              git clone https://github.com/gopi-maganti/fruitstore-flask.git
+              cd fruitstore-flask
+              SECRET=$(aws secretsmanager get-secret-value --secret-id ${var.db_secret_name} --region us-east-1 --query SecretString --output text)
+              echo "$SECRET" > db_secret.json
+              export DB_HOST=$(jq -r .host db_secret.json)
+              export DB_USER=$(jq -r .username db_secret.json)
+              export DB_PASSWORD=$(jq -r .password db_secret.json)
+              export DB_NAME=$(jq -r .dbname db_secret.json)
+              export S3_BUCKET_NAME=fruitstore-image-uploads
+              export USE_AWS_SECRET=true
+              export AWS_SECRET_NAME=fruitstore-db-secret
+              export AWS_REGION=us-east-1
+              pip3 install -r requirements.txt
+              nohup python3 run.py > app.log 2>&1 &
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get update -y",
-      "sudo apt-get install -y python3-pip git",
-      "git clone https://github.com/gopi-maganti/fruitstore-flask.git",
-      "cd fruitstore-flask",
-      "pip3 install --user -r requirements.txt",
-      "echo 'USE_AWS_SECRET=true' > .env",
-      "echo 'AWS_SECRET_NAME=fruitstore-db-secret-v11' >> .env",
-      "echo 'AWS_REGION=us-east-1' >> .env",
-      "echo 'S3_BUCKET_NAME=fruitstore-image-uploads' >> .env",
-      "export USE_AWS_SECRET=true",
-      "export AWS_SECRET_NAME=fruitstore-db-secret-v11",
-      "export AWS_REGION=us-east-1",
-      "export S3_BUCKET_NAME=fruitstore-image-uploads",
-      "nohup python3 run.py > app.log 2>&1 &"
-    ]
-  }
+              cat <<EOT > /opt/aws/amazon-cloudwatch-agent/bin/config.json
+              {
+                "logs": {
+                  "logs_collected": {
+                    "files": {
+                      "collect_list": [
+                        {
+                          "file_path": "/home/ubuntu/fruitstore-flask/app.log",
+                          "log_group_name": "/aws/fruitstore/app",
+                          "log_stream_name": "{instance_id}-app",
+                          "timestamp_format": "%Y-%m-%d %H:%M:%S"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "metrics": {
+                  "append_dimensions": {
+                    "InstanceId": "$${aws:InstanceId}"
+                  },
+                  "metrics_collected": {
+                    "cpu": {
+                      "measurement": ["cpu_usage_idle", "cpu_usage_iowait"],
+                      "metrics_collection_interval": 60
+                    },
+                    "mem": {
+                      "measurement": ["mem_used_percent"],
+                      "metrics_collection_interval": 60
+                    }
+                  }
+                }
+              }
+              EOT
+
+              /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+                -a fetch-config \
+                -m ec2 \
+                -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json \
+                -s
+              EOF
 
   tags = {
     Name = "FruitStoreEC2"

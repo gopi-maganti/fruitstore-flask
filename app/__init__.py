@@ -17,7 +17,6 @@ def create_app():
         app,
         supports_credentials=True,
         resources={r"/*": {"origins": "https://d3pj8ooak7hbtk.cloudfront.net"}},
-        allow_headers=["Access-Control-Allow-Origin"],
     )
 
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)

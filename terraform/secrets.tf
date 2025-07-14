@@ -1,7 +1,13 @@
 resource "aws_secretsmanager_secret" "db_secret" {
-  name        = "fruitstore-db-secret-v11"
+  name        = var.db_secret_name
   description = "PostgreSQL credentials for FruitStore app"
+  recovery_window_in_days = 7
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
+
 
 resource "aws_secretsmanager_secret_version" "db_secret_version" {
   secret_id     = aws_secretsmanager_secret.db_secret.id

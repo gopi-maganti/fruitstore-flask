@@ -51,3 +51,8 @@ variable "s3_bucket_name" {
   type        = string
   description = "The name of the S3 bucket to upload images"
 }
+
+variable "db_secret_name" {
+  description = "The name of the AWS Secrets Manager secret for the database credentials"
+  type        = string
+}
