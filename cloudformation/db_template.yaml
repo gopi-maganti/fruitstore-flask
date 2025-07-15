@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Aurora PostgreSQL Cluster with 1 writer instance
+
+Parameters:
+  DBUsername:
+    Type: String
+  DBPassword:
+    Type: String
+    NoEcho: true
+
+Resources:
+  FruitstoreDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnets for Aurora Cluster
+      SubnetIds:
+        - !ImportValue FruitstoreSubnetId
+      DBSubnetGroupName: fruitstore-db-subnet
+
+  AuroraCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      Engine: aurora-postgresql
+      EngineMode: provisioned
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref FruitstoreDBSubnetGroup
+      VpcSecurityGroupIds:
+        - !ImportValue FruitstoreSecurityGroupId
+      BackupRetentionPeriod: 1
+      PreferredBackupWindow: 07:00-09:00
+      Tags:
+        - Key: Name
+          Value: FruitstoreAuroraCluster
+
+  AuroraInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBClusterIdentifier: !Ref AuroraCluster
+      DBInstanceClass: db.t3.medium
+      Engine: aurora-postgresql
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref FruitstoreDBSubnetGroup
+      Tags:
+        - Key: Name
+          Value: FruitstoreAuroraWriter
+
+Outputs:
+  ClusterEndpoint:
+    Value: !GetAtt AuroraCluster.Endpoint.Address
+    Export:
+      Name: FruitstoreDBEndpoint

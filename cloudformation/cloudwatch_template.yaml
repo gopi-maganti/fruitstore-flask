@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudWatch Logs for Flask application
+
+Resources:
+  FruitstoreLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /fruitstore/app
+      RetentionInDays: 7
+      Tags:
+        - Key: Name
+          Value: FruitstoreLogGroup
+
+Outputs:
+  LogGroupName:
+    Value: !Ref FruitstoreLogGroup
+    Export:
+      Name: FruitstoreAppLogGroup

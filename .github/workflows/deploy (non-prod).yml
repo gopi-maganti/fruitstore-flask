@@ -1,0 +1,35 @@
+name: Deploy to Non-Prod
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to deploy'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.NONPROD_HOST }}
+          username: ec2-user
+          key: ${{ secrets.NONPROD_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/app
+            git fetch --all --tags
+            git checkout ${{ github.event.inputs.tag }}
+            source .venv/bin/activate
+            pip install -r requirements.txt
+            echo 'Fetching DB credentials from Secrets Manager'
+            python3 scripts/init_env.py
+            echo 'Restarting Flask app'
+            pkill gunicorn || true
+            nohup gunicorn app:app --bind 0.0.0.0:5000 &
