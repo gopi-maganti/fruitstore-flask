@@ -27,7 +27,7 @@ jobs:
 
       - name: Deploy CloudFormation template
         run: |
-          TEMPLATE="cloudformation/${{ github.event.inputs.template }}.yml"
+          TEMPLATE="cloudformation/${{ github.event.inputs.template }}_template.yml"
           STACK="${{ github.event.inputs.stack-name }}"
 
           echo "Deploying $TEMPLATE to stack $STACK..."
