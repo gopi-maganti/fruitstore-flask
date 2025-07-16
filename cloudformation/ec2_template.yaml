@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EC2 Instance for Flask app with Secrets Manager integration
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+  LatestReleaseTag:
+    Type: String
+
+Resources:
+  FruitstoreEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      KeyName: !Ref KeyName
+      ImageId: ami-0c02fb55956c7d316  # Amazon Linux 2 AMI (replace if needed)
+      SubnetId: !ImportValue FruitstoreSubnetId
+      SecurityGroupIds:
+        - !ImportValue FruitstoreSecurityGroupId
+      IamInstanceProfile: !ImportValue FruitstoreInstanceProfile
+      Tags:
+        - Key: Name
+          Value: FruitstoreEC2
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y git python3-pip
+          cd /home/ec2-user
+          git clone https://github.com/your-org/fruitstore-flask.git app
+          cd app
+          git checkout ${LatestReleaseTag}
+          pip3 install -r requirements.txt
+          echo "Installing boto3 and gunicorn"
+          pip3 install boto3 gunicorn
+
+          echo "Fetching secrets"
+          python3 <<EOF
+          import boto3, json
+          secrets = boto3.client('secretsmanager', region_name='us-east-1')
+          secret = secrets.get_secret_value(SecretId='fruitstore/db_credentials')
+          creds = json.loads(secret['SecretString'])
+          with open(".env", "w") as f:
+              for k, v in creds.items():
+                  f.write(f"{k}={v}\n")
+          EOF
+
+          echo "Starting Flask app"
+          nohup gunicorn app:app --bind 0.0.0.0:5000 &
+
+Outputs:
+  InstanceId:
+    Value: !Ref FruitstoreEC2
+    Export:
+      Name: FruitstoreEC2InstanceId
