@@ -1,21 +1,13 @@
-name: Deploy CloudFormation Stack
+name: Deploy Full Infrastructure
 
 on:
   workflow_dispatch:
-    inputs:
-      template:
-        description: 'Template name (e.g., vpc, ec2, db, secrets)'
-        required: true
-      stack-name:
-        description: 'CloudFormation stack name'
-        required: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials
@@ -25,50 +17,53 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Deploy CloudFormation template
+      - name: Deploy VPC
         run: |
-          TEMPLATE="cloudformation/${{ github.event.inputs.template }}_template.yml"
-          STACK="${{ github.event.inputs.stack-name }}"
+          aws cloudformation deploy \
+            --stack-name fruitstore-vpc \
+            --template-file cloudformation/vpc.yml \
+            --capabilities CAPABILITY_NAMED_IAM
 
-          echo "Deploying $TEMPLATE to stack $STACK..."
+      - name: Deploy Security Group & IAM Roles
+        run: |
+          aws cloudformation deploy \
+            --stack-name fruitstore-security \
+            --template-file cloudformation/security.yml \
+            --capabilities CAPABILITY_NAMED_IAM
 
-          case "${{ github.event.inputs.template }}" in
-            vpc|cloudwatch|security)
-              aws cloudformation deploy \
-                --stack-name $STACK \
-                --template-file $TEMPLATE \
-                --capabilities CAPABILITY_NAMED_IAM
-              ;;
-            db)
-              aws cloudformation deploy \
-                --stack-name $STACK \
-                --template-file $TEMPLATE \
-                --capabilities CAPABILITY_NAMED_IAM \
-                --parameter-overrides \
-                  DBUsername=admin \
-                  DBPassword=dummy1234
-              ;;
-            secrets)
-              aws cloudformation deploy \
-                --stack-name $STACK \
-                --template-file $TEMPLATE \
-                --parameter-overrides \
-                  DBUsername=fruituser \
-                  DBPassword=SuperSecurePass123 \
-                  DBHost=fruitstore-cluster.cluster-c69cq4mcm794.us-east-1.rds.amazonaws.com \
-                  DBName=fruitstore
-              ;;
-            ec2)
-              aws cloudformation deploy \
-                --stack-name $STACK \
-                --template-file $TEMPLATE \
-                --capabilities CAPABILITY_NAMED_IAM \
-                --parameter-overrides \
-                  KeyName=${{ secrets.KEY_NAME }} \
-                  LatestReleaseTag=latest
-              ;;
-            *)
-              echo "Unknown template type"
-              exit 1
-              ;;
-          esac
+      - name: Deploy Aurora DB Cluster
+        run: |
+          aws cloudformation deploy \
+            --stack-name fruitstore-db \
+            --template-file cloudformation/db.yml \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides \
+              DBUsername=fruituser \
+              DBPassword=SuperSecurePass123
+
+      - name: Deploy Secrets
+        run: |
+          aws cloudformation deploy \
+            --stack-name fruitstore-secrets \
+            --template-file cloudformation/secrets.yml \
+            --parameter-overrides \
+              DBUsername=fruituser \
+              DBPassword=SuperSecurePass123 \
+              DBHost=fruitstore-cluster.cluster-c69cq4mcm794.us-east-1.rds.amazonaws.com \
+              DBName=fruitstore
+
+      - name: Deploy EC2 Instance
+        run: |
+          aws cloudformation deploy \
+            --stack-name fruitstore-ec2 \
+            --template-file cloudformation/ec2.yml \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides \
+              KeyName=${{ secrets.KEY_NAME }} \
+              LatestReleaseTag=latest
+
+      - name: Deploy CloudWatch Logs Group
+        run: |
+          aws cloudformation deploy \
+            --stack-name fruitstore-cloudwatch \
+            --template-file cloudformation/cloudwatch.yml
