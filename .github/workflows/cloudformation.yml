@@ -1,0 +1,74 @@
+name: Deploy CloudFormation Stack
+
+on:
+  workflow_dispatch:
+    inputs:
+      template:
+        description: 'Template name (e.g., vpc, ec2, db, secrets)'
+        required: true
+      stack-name:
+        description: 'CloudFormation stack name'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy CloudFormation template
+        run: |
+          TEMPLATE="cloudformation/${{ github.event.inputs.template }}.yml"
+          STACK="${{ github.event.inputs.stack-name }}"
+
+          echo "Deploying $TEMPLATE to stack $STACK..."
+
+          case "${{ github.event.inputs.template }}" in
+            vpc|cloudwatch|security)
+              aws cloudformation deploy \
+                --stack-name $STACK \
+                --template-file $TEMPLATE \
+                --capabilities CAPABILITY_NAMED_IAM
+              ;;
+            db)
+              aws cloudformation deploy \
+                --stack-name $STACK \
+                --template-file $TEMPLATE \
+                --capabilities CAPABILITY_NAMED_IAM \
+                --parameter-overrides \
+                  DBUsername=admin \
+                  DBPassword=dummy1234
+              ;;
+            secrets)
+              aws cloudformation deploy \
+                --stack-name $STACK \
+                --template-file $TEMPLATE \
+                --parameter-overrides \
+                  DBUsername=fruituser \
+                  DBPassword=SuperSecurePass123 \
+                  DBHost=fruitstore-cluster.cluster-c69cq4mcm794.us-east-1.rds.amazonaws.com \
+                  DBName=fruitstore
+              ;;
+            ec2)
+              aws cloudformation deploy \
+                --stack-name $STACK \
+                --template-file $TEMPLATE \
+                --capabilities CAPABILITY_NAMED_IAM \
+                --parameter-overrides \
+                  KeyName=${{ secrets.KEY_NAME }} \
+                  LatestReleaseTag=latest
+              ;;
+            *)
+              echo "Unknown template type"
+              exit 1
+              ;;
+          esac
