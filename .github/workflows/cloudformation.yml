@@ -21,21 +21,21 @@ jobs:
         run: |
           aws cloudformation deploy \
             --stack-name fruitstore-vpc \
-            --template-file cloudformation/vpc.yml \
+            --template-file cloudformation/vpc_template.yml \
             --capabilities CAPABILITY_NAMED_IAM
 
       - name: Deploy Security Group & IAM Roles
         run: |
           aws cloudformation deploy \
             --stack-name fruitstore-security \
-            --template-file cloudformation/security.yml \
+            --template-file cloudformation/security_template.yml \
             --capabilities CAPABILITY_NAMED_IAM
 
       - name: Deploy Aurora DB Cluster
         run: |
           aws cloudformation deploy \
             --stack-name fruitstore-db \
-            --template-file cloudformation/db.yml \
+            --template-file cloudformation/db_template.yml \
             --capabilities CAPABILITY_NAMED_IAM \
             --parameter-overrides \
               DBUsername=fruituser \
@@ -45,7 +45,7 @@ jobs:
         run: |
           aws cloudformation deploy \
             --stack-name fruitstore-secrets \
-            --template-file cloudformation/secrets.yml \
+            --template-file cloudformation/secrets_template.yml \
             --parameter-overrides \
               DBUsername=fruituser \
               DBPassword=SuperSecurePass123 \
@@ -56,7 +56,7 @@ jobs:
         run: |
           aws cloudformation deploy \
             --stack-name fruitstore-ec2 \
-            --template-file cloudformation/ec2.yml \
+            --template-file cloudformation/ec2_template.yml \
             --capabilities CAPABILITY_NAMED_IAM \
             --parameter-overrides \
               KeyName=${{ secrets.KEY_NAME }} \
@@ -66,4 +66,4 @@ jobs:
         run: |
           aws cloudformation deploy \
             --stack-name fruitstore-cloudwatch \
-            --template-file cloudformation/cloudwatch.yml
+            --template-file cloudformation/cloudwatch_template.yml
