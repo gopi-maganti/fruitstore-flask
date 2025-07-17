@@ -2,6 +2,7 @@ import os
 import sys
 
 # ✅ Disable AWS secrets during test runs
+os.environ["FLASK_ENV"] = "test"
 os.environ["USE_AWS_SECRET"] = "false"
 os.environ["DB_USER"] = "testuser"
 os.environ["DB_PASSWORD"] = "testpass"
