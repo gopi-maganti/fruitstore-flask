@@ -38,4 +38,11 @@ class Config:
     )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    USE_S3_UPLOADS = os.getenv("USE_S3_UPLOADS", "true").lower() == "true"
+
+    if not USE_S3_UPLOADS:
+        UPLOAD_FOLDER = os.path.join(os.getcwd(), "static", "uploads")
+    else:
+        UPLOAD_FOLDER = "/tmp/uploads"  # Dummy path just to satisfy os.makedirs in CI
+
 
