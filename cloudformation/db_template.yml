@@ -14,7 +14,8 @@ Resources:
     Properties:
       DBSubnetGroupDescription: Subnets for Aurora Cluster
       SubnetIds:
-        - !ImportValue FruitstoreSubnetId
+        - !ImportValue FruitstoreSubnet1Id
+        - !ImportValue FruitstoreSubnet2Id
       DBSubnetGroupName: fruitstore-db-subnet
 
   AuroraCluster:
