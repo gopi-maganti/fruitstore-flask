@@ -1,7 +1,7 @@
 import os
 import sys
 
-# ✅ Add the project root directory to the PYTHONPATH BEFORE importing anything from app
+# ✅ Ensure project root is in path before importing app modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from datetime import datetime, timedelta
@@ -16,11 +16,20 @@ from app.models.users import User
 
 @pytest.fixture
 def app():
+    # ✅ Disable AWS secrets during test runs
+    os.environ["USE_AWS_SECRET"] = "false"
+    os.environ["DB_USER"] = "testuser"
+    os.environ["DB_PASSWORD"] = "testpass"
+    os.environ["DB_HOST"] = "localhost"
+    os.environ["DB_PORT"] = "5432"
+    os.environ["DB_NAME"] = "testdb"
+
     app = create_app()
     app.config.update(
         {
             "TESTING": True,
-            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",  # In-memory database
+            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",  # In-memory DB for test isolation
+            "SQLALCHEMY_TRACK_MODIFICATIONS": False,
         }
     )
 
