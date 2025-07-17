@@ -12,16 +12,27 @@ Resources:
         - Key: Name
           Value: FruitstoreVPC
 
-  PublicSubnet:
+  PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref FruitstoreVPC
       CidrBlock: 10.0.1.0/24
-      MapPublicIpOnLaunch: true
       AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: PublicSubnet
+          Value: PublicSubnet1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref FruitstoreVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet2
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -51,10 +62,16 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-  SubnetRouteTableAssociation:
+  Subnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PublicSubnet
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  Subnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
 
 Outputs:
@@ -63,7 +80,12 @@ Outputs:
     Export:
       Name: FruitstoreVPCId
 
-  SubnetId:
-    Value: !Ref PublicSubnet
+  Subnet1Id:
+    Value: !Ref PublicSubnet1
     Export:
-      Name: FruitstoreSubnetId
+      Name: FruitstoreSubnet1Id
+
+  Subnet2Id:
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: FruitstoreSubnet2Id
