@@ -128,7 +128,7 @@ resource "aws_instance" "fruitstore_instance" {
               export DB_NAME=$(jq -r .dbname db_secret.json)
               export S3_BUCKET_NAME=fruitstore-image-uploads
               export USE_AWS_SECRET=true
-              export AWS_SECRET_NAME=fruitstore-db-secret
+              export AWS_SECRET_NAME=fruitstore/db_credentials
               export AWS_REGION=us-east-1
               pip3 install -r requirements.txt
               nohup python3 run.py > app.log 2>&1 &
