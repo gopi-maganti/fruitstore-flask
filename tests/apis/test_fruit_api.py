@@ -1,7 +1,7 @@
 import pytest
 
 # --------------------------------------
-# Positive Test Cases
+# ✅ Positive Test Cases
 # --------------------------------------
 
 def test_add_fruit_success(client, add_fruit):
@@ -42,9 +42,8 @@ def test_delete_fruit_success(client, add_fruit):
     assert response.status_code == 200
     assert b"deleted successfully" in response.data
 
-
 # --------------------------------------
-# Negative Test Cases
+# ❌ Negative Test Cases
 # --------------------------------------
 
 def test_add_fruit_invalid_data(client):

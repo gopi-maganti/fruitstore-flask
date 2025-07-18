@@ -3,6 +3,7 @@ import sys
 from datetime import datetime, timedelta
 import io
 import pytest
+import aws_utils.s3_utils as s3_utils
 
 # ✅ Override env for local test run
 os.environ["FLASK_ENV"] = "test"
@@ -55,17 +56,18 @@ def cleanup_db():
 @pytest.fixture
 def add_user():
     def _add_user(client, name="CartUser", email="cart@example.com", phone="1234567890"):
-        return client.post(
-            "/user/add",
-            json={"name": name, "email": email, "phone_number": phone},
-        )
+        resp = client.post("/user/add", json={
+            "name": name, "email": email, "phone_number": phone
+        })
+        user = User.query.filter_by(email=email).first()
+        return resp, user.user_id
     return _add_user
 
 # ✅ Add a fruit dynamically with image
 @pytest.fixture
 def add_fruit():
     def _add_fruit(client):
-        image = (io.BytesIO(b"fake-image"), "fruit.jpg")
+        image = (io.BytesIO(b"fake"), "fruit.jpg")
         fruit_data = {
             "name": "Test Fruit",
             "description": "desc",
@@ -128,3 +130,10 @@ def setup_order_data(app):
             "fruit_id": fruit.fruit_id,
             "info_id": info.info_id,
         }
+
+@pytest.fixture(autouse=True)
+def mock_s3_upload(monkeypatch):
+    def fake_upload_to_s3(file, bucket, key):
+        return "https://example.com/mock-image.jpg"
+    
+    monkeypatch.setattr(s3_utils, "upload_to_s3", fake_upload_to_s3)

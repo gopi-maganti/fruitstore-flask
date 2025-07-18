@@ -5,9 +5,9 @@ import pytest
 # --------------------------------------
 
 def test_add_user_success(client, add_user):
-    response = add_user(client, name="Alice", email="alice@example.com", phone="1112223333")
+    response, user_id = add_user(client, name="Alice", email="alice@example.com", phone="1112223333")
     assert response.status_code == 201
-    assert b"User created with ID" in response.data
+    assert b"User created" in response.data
 
 def test_get_all_users(client, add_user):
     add_user(client, name="Bob", email="bob@example.com", phone="2223334444")
@@ -16,27 +16,24 @@ def test_get_all_users(client, add_user):
     assert isinstance(response.get_json(), list)
 
 def test_get_single_user_success(client, add_user):
-    user_resp = add_user(client, name="Charlie", email="charlie@example.com", phone="3334445555")
-    user_id = int(user_resp.get_json()["message"].split(":")[-1])
+    _, user_id = add_user(client, name="Charlie", email="charlie@example.com", phone="3334445555")
     response = client.get(f"/user/{user_id}")
     assert response.status_code == 200
     assert response.get_json()["user_id"] == user_id
 
 def test_delete_user_success(client, add_user):
-    user_resp = add_user(client, name="Dave", email="dave@example.com", phone="4445556666")
-    user_id = int(user_resp.get_json()["message"].split(":")[-1])
+    _, user_id = add_user(client, name="Dave", email="dave@example.com", phone="4445556666")
     response = client.delete(f"/user/delete/{user_id}")
     assert response.status_code == 200
     assert b"deleted successfully" in response.data
-
 
 # --------------------------------------
 # ❌ Negative Test Cases
 # --------------------------------------
 
-def test_add_user_invalid_emails(client):
+def test_add_user_invalid_email(client):
     response = client.post("/user/add", json={
-        "name": "Eve", "email": "bademail", "phone_number": "5556667777"
+        "name": "Eve", "email": "invalid-email", "phone_number": "5556667777"
     })
     assert response.status_code == 400
     assert b"Invalid email format" in response.data
