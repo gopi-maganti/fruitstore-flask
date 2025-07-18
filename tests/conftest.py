@@ -133,7 +133,7 @@ def setup_order_data(app):
 
 @pytest.fixture(autouse=True)
 def mock_s3_upload(monkeypatch):
-    def fake_upload_to_s3(file, bucket, key):
+    def fake_upload_to_s3(file, bucket, key, **kwargs):
         return "https://example.com/mock-image.jpg"
     
     monkeypatch.setattr(s3_utils, "upload_to_s3", fake_upload_to_s3)
