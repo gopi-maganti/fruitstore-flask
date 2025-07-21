@@ -21,7 +21,7 @@ jobs:
         with:
           host: ${{ secrets.NONPROD_HOST }}
           username: ec2-user
-          key: ${{ secrets.NONPROD_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user/app
             git fetch --all --tags
