@@ -12,6 +12,9 @@ from app.validations.cart_validation import CartAddValidation, CartUpdateValidat
 cart_bp = Blueprint("cart_bp", __name__)
 logger = get_logger("cart_routes")
 
+# -----------------------------------------------
+# Add Cart Item
+# -----------------------------------------------
 
 @cart_bp.route("/add", methods=["POST"])
 @swag_from("swagger_docs/cart/add_cart_item.yml")
@@ -26,11 +29,20 @@ def add_cart_item():
         return jsonify(item.as_dict()), 201
     except ValidationError as ve:
         logger.warning("Validation error in cart add", errors=ve.errors())
-        return jsonify({"error": ve.errors()}), 400
-    except Exception as e:
-        logger.exception("Failed to add to cart")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": ve.errors()}), 400  # ✅ Correct status code
 
+    except ValueError as ve:
+        logger.warning("Business logic error in cart add", exception=str(ve))
+        return jsonify({"error": str(ve)}), 404
+
+    except Exception as e:
+        logger.error("Unhandled exception in cart add", exception=str(e))
+        return jsonify({"error": "Internal Server Error"}), 500
+
+
+# -----------------------------------------------
+# Associate Cart with User
+# -----------------------------------------------
 
 @cart_bp.route("/associate-cart", methods=["POST"])
 @swag_from("swagger_docs/cart/associate_cart.yml")
@@ -55,6 +67,10 @@ def associate_cart():
     return jsonify({"message": f"{updated} cart items associated with user {new_user_id}"}), 200
 
 
+# -----------------------------------------------
+# Get Cart Items by User ID
+# -----------------------------------------------
+
 @cart_bp.route("/<string:user_id>", methods=["GET"])
 @swag_from("swagger_docs/cart/get_user_cart.yml")
 def get_cart_items(user_id):
@@ -72,6 +88,10 @@ def get_cart_items(user_id):
     logger.info("Cart items fetched", count=len(cart_items), user_id=user_id)
     return jsonify([item.as_dict() for item in cart_items]), 200
 
+
+# -----------------------------------------------
+# Update Cart Item
+# -----------------------------------------------
 
 @cart_bp.route("/update/<int:cart_id>", methods=["PUT"])
 @swag_from("swagger_docs/cart/update_cart_item.yml")
@@ -102,32 +122,47 @@ def update_cart_item(cart_id):
         return jsonify({"error": str(e)}), 500
 
 
+# -----------------------------------------------
+# Delete Cart Item
+# -----------------------------------------------
+
 @cart_bp.route("/delete/<int:cart_id>", methods=["DELETE"])
 @swag_from("swagger_docs/cart/delete_cart_item.yml")
 def delete_cart_item(cart_id):
-    cart_item = Cart.query.get(cart_id)
-    if not cart_item:
-        logger.warning("Cart item not found for deletion", cart_id=cart_id)
-        return jsonify({"error": "Cart item not found"}), 404
+    try:
+        cart_item = Cart.query.get(cart_id)
+        if not cart_item:
+            logger.warning("Cart item not found for deletion", cart_id=cart_id)
+            return jsonify({"error": "Cart item not found"}), 404
 
-    db.session.delete(cart_item)
-    db.session.commit()
-    logger.info("Cart item deleted", cart_id=cart_id)
-    return jsonify({"message": "Cart item deleted successfully"}), 200
+        db.session.delete(cart_item)
+        db.session.commit()
+        logger.info("Cart item deleted", cart_id=cart_id)
+        return jsonify({"message": "Cart item deleted successfully"}), 200
+    except Exception:
+        logger.exception("Failed to delete cart item")
+        return jsonify({"error": "Internal Server Error"}), 500
 
+# -----------------------------------------------
+# Clear User Cart
+# -----------------------------------------------
 
 @cart_bp.route("/clear/<int:user_id>", methods=["DELETE"])
 @swag_from("swagger_docs/cart/clear_user_cart.yml")
 def clear_cart(user_id):
-    cart_items = Cart.query.filter_by(user_id=user_id).all()
+    try:
+        cart_items = Cart.query.filter_by(user_id=user_id).all()
 
-    if not cart_items:
-        logger.info("No cart items to clear", user_id=user_id)
-        return jsonify({"message": "No cart items to delete"}), 404
+        if not cart_items:
+            logger.info("No cart items to clear", user_id=user_id)
+            return jsonify({"message": "No cart items to delete"}), 404
 
-    for item in cart_items:
-        db.session.delete(item)
+        for item in cart_items:
+            db.session.delete(item)
 
-    db.session.commit()
-    logger.info("All cart items cleared", user_id=user_id)
-    return jsonify({"message": "All cart items cleared for user"}), 200
+        db.session.commit()
+        logger.info("All cart items cleared", user_id=user_id)
+        return jsonify({"message": "All cart items cleared for user"}), 200
+    except Exception:
+        logger.exception("Failed to clear cart")
+        return jsonify({"error": "Internal Server Error"}), 500

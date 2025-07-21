@@ -11,19 +11,16 @@ class User(db.Model):
     def __repr__(self):
         return f"<User {self.name}, Email: {self.email}, Phone: {self.phone_number}>"
 
-    def exists(self):
-        return (
-            User.query.filter_by(
-                name=self.name, email=self.email, phone_number=self.phone_number
-            ).first()
-            is not None
-        )
+    @classmethod
+    def exists(cls, **kwargs):
+        return cls.query.filter_by(**kwargs).first() is not None
 
     def save(self):
-        if self.exists():
+        if User.exists(email=self.email) or (self.phone_number and User.exists(phone_number=self.phone_number)):
             raise ValueError("User with these details already exists.")
         db.session.add(self)
         db.session.commit()
+
 
     def to_dict(self):
         return {
@@ -32,3 +29,4 @@ class User(db.Model):
             "email": self.email,
             "phone_number": self.phone_number,
         }
+

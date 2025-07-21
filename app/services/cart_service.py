@@ -74,6 +74,36 @@ def get_cart_items_by_user(user_id: int) -> list:
     return items
 
 
+def update_cart_item(cart_id: int, quantity: int) -> Cart:
+    """
+    Update the quantity of a specific cart item.
+
+    Parameters
+    ----------
+    cart_id : int
+        The ID of the cart item to update.
+    quantity : int
+        The new quantity for the cart item.
+
+    Returns
+    -------
+    Cart
+        The updated cart item.
+    """
+    cart_item = Cart.query.get(cart_id)
+    if not cart_item:
+        logger.warning("Cart item not found for update", cart_id=cart_id)
+        raise ValueError("Cart item not found")
+
+    cart_item.quantity = quantity
+    if cart_item.fruit_info and cart_item.fruit_info.price:
+        cart_item.item_price = quantity * cart_item.fruit_info.price
+
+    db.session.commit()
+    logger.info("Cart item updated", cart_id=cart_item.cart_id, quantity=quantity)
+    return cart_item
+
+
 def delete_cart_item(cart_id: int) -> bool:
     """
     Delete a specific cart item by ID.

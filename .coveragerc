@@ -1,0 +1,34 @@
+[run]
+# The source code directory to measure
+source = app
+
+# Omit these paths from coverage measurement
+omit =
+    */__init__.py
+    */config/*
+    */log_config.py
+    */validations/*
+    */extensions.py
+    tests/*
+    venv/*
+    aws_utils/secrets_manager.py
+    aws_utils/log_utils.py
+
+[report]
+# Exclude specific lines from coverage reporting
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    logger\.
+    pass
+
+# Enforce a minimum coverage percentage
+fail_under = 90
+
+# Show missing lines in the report
+show_missing = True
+
+[html]
+# Output directory for HTML report
+directory = coverage_html_report

@@ -25,7 +25,7 @@ def test_delete_user_success(client, add_user):
     _, user_id = add_user(client, name="Dave", email="dave@example.com", phone="4445556666")
     response = client.delete(f"/user/delete/{user_id}")
     assert response.status_code == 200
-    assert b"deleted successfully" in response.data
+    assert b"User deleted successfully!!" in response.data
 
 # --------------------------------------
 # ❌ Negative Test Cases
@@ -36,14 +36,19 @@ def test_add_user_invalid_email(client):
         "name": "Eve", "email": "invalid-email", "phone_number": "5556667777"
     })
     assert response.status_code == 400
-    assert b"Invalid email format" in response.data
+    assert b"n email address must have an @-sign." in response.data
 
 def test_add_user_invalid_phone_number(client):
     response = client.post("/user/add", json={
         "name": "Frank", "email": "frank@example.com", "phone_number": "notaphone"
     })
     assert response.status_code == 400
-    assert b"Invalid phone number" in response.data
+    data = response.get_json()
+    assert "details" in data
+    assert any(
+        err["loc"] == ["phone_number"] and "10 digits" in err["msg"]
+        for err in data["details"]
+    )
 
 def test_get_single_user_not_found(client):
     response = client.get("/user/99999")

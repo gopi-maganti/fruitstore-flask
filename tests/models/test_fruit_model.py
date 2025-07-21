@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from app import db
 from app.models.fruit import Fruit, FruitInfo
+from aws_utils import s3_utils
 
 
 def test_fruit_to_dict(app):

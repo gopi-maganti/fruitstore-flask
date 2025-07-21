@@ -4,6 +4,7 @@ from app import db
 from app.models.fruit import Fruit, FruitInfo
 from app.models.orders import Order, ParentOrder
 from app.models.users import User
+from aws_utils import s3_utils
 
 
 def test_order_total_price(app):
