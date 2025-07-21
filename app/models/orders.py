@@ -17,7 +17,7 @@ class Order(db.Model):
     __tablename__ = "orders"
     order_id = db.Column(db.Integer, primary_key=True)
     parent_order_id = db.Column(
-        db.Integer, db.ForeignKey("parent_orders.id"), nullable=False
+        db.Integer, db.ForeignKey("parent_orders.id"), nullable=True
     )
     user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"), nullable=False)
     fruit_id = db.Column(

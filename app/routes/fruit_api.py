@@ -13,6 +13,9 @@ from app.utils.log_config import get_logger
 fruit_bp = Blueprint("fruit_bp", __name__)
 logger = get_logger("fruit_routes")
 
+# -----------------------------------------------
+# Add Fruit and FruitInfo
+# -----------------------------------------------
 
 @fruit_bp.route("/add", methods=["POST"])
 @swag_from("swagger_docs/fruit/add_fruit.yml")
@@ -68,7 +71,11 @@ def add_fruit_with_info():
         return jsonify({"error": "Upload failed", "details": str(e)}), 500
 
 
-@fruit_bp.route("/", methods=["GET"])
+# -----------------------------------------------
+# Get All Fruits
+# -----------------------------------------------
+
+@fruit_bp.route("/all", methods=["GET"])
 @swag_from("swagger_docs/fruit/get_all_fruits.yml")
 def get_all_fruits():
     try:
@@ -78,6 +85,10 @@ def get_all_fruits():
         logger.exception("Failed to fetch fruits")
         return jsonify({"error": str(e)}), 500
 
+
+# -----------------------------------------------
+# Get Fruit by ID
+# -----------------------------------------------
 
 @fruit_bp.route("/<int:fruit_id>", methods=["GET"])
 @swag_from("swagger_docs/fruit/get_fruit_by_id.yml")
@@ -91,6 +102,10 @@ def get_fruit_by_id(fruit_id):
         logger.exception("Failed to get fruit by ID")
         return jsonify({"error": str(e)}), 500
 
+
+# -----------------------------------------------
+# Search Fruits
+# -----------------------------------------------
 
 @fruit_bp.route("/search", methods=["GET"])
 @swag_from("swagger_docs/fruit/search_fruits.yml")
@@ -107,7 +122,11 @@ def search_fruits():
         return jsonify({"error": str(e)}), 500
 
 
-@fruit_bp.route("/<int:fruit_id>", methods=["PUT"])
+# -----------------------------------------------
+# Update Fruit Info
+# -----------------------------------------------
+
+@fruit_bp.route("/update/<int:fruit_id>", methods=["PUT"])
 @swag_from("swagger_docs/fruit/update_fruit_info.yml")
 def update_fruit_info(fruit_id):
     try:
@@ -133,21 +152,31 @@ def update_fruit_info(fruit_id):
         return jsonify({"error": str(e)}), 500
 
 
+# -----------------------------------------------
+# Delete Fruits
+# -----------------------------------------------
+
 @fruit_bp.route("/delete", methods=["DELETE"])
+@fruit_bp.route("/delete/<int:fruit_id>", methods=["DELETE"])
 @swag_from("swagger_docs/fruit/delete_fruits.yml")
-def delete_fruits():
+def delete_fruits(fruit_id=None):
     try:
-        data = request.get_json()
-        ids = data.get("ids", [])
+        if fruit_id is not None:
+            ids = [fruit_id]
+        else:
+            data = request.get_json(silent=True) or {}
+            ids = data.get("ids", [])
 
         if not ids:
-            return jsonify({"error": "No fruit IDs provided"}), 400
+            return jsonify({"error": "No fruit ID(s) provided"}), 400
 
         deleted = fruit_service.delete_fruits(ids)
         if deleted == 0:
             return jsonify({"error": "No fruits found to delete"}), 404
 
-        return jsonify({"message": f"Deleted {deleted} fruit(s) successfully"}), 200
+        return jsonify({
+            "message": f"Deleted {deleted} fruit{'s' if deleted > 1 else ''} successfully"
+        }), 200
 
     except Exception as e:
         logger.exception("Failed to delete fruits")

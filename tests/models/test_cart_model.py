@@ -1,60 +1,44 @@
-from datetime import datetime, timedelta
-
-from app import db
 from app.models.cart import Cart
-from app.models.fruit import Fruit, FruitInfo
-from app.models.users import User
+from app.models.fruit import Fruit
+from unittest.mock import patch, MagicMock
+from datetime import datetime
+from app import db, create_app
 
 
-def test_cart_as_dict(app):
+def test_cart_to_dict():
+    cart = Cart(user_id=1, fruit_id=2, quantity=3, item_price=30.0)
+    cart.cart_id = 1
+    cart.added_date = datetime(2025, 7, 18)
+    cart.fruit = Fruit(name="Apple", image_url="https://example.com/apple.jpg")
+    result = cart.as_dict()
+
+    assert result["cart_id"] == 1
+    assert result["user_id"] == 1
+    assert result["fruit_id"] == 2
+    assert result["quantity"] == 3
+    assert result["item_price"] == 30.0
+    assert result["fruit_name"] == "Apple"
+    assert result["image_url"] == "https://example.com/apple.jpg"
+    assert result["added_date"] == "2025-07-18T00:00:00"
+
+
+def test_cart_repr():
+    cart = Cart(user_id=2, fruit_id=5, quantity=1, item_price=10.0)
+    cart.cart_id = 42
+    assert repr(cart) == "<Cart 42, User: 2, Fruit: 5, Quantity: 1>"
+
+
+@patch("app.models.cart.db.session")
+@patch("app.models.cart.Cart.exists", return_value=False)
+def test_cart_save(mock_exists, mock_session):
+    cart = Cart(user_id=1, fruit_id=1, quantity=2, item_price=20.0)
+    cart.save()
+    mock_session.add.assert_called_once_with(cart)
+    mock_session.commit.assert_called_once()
+
+
+@patch("app.models.cart.Cart.query")
+def test_cart_exists(mock_query, app):
     with app.app_context():
-        user = User(
-            name="CartUser", email="cart@example.com", phone_number="2223334444"
-        )
-        fruit = Fruit(name="Banana", color="Yellow", size="S", has_seeds=False)
-        db.session.add_all([user, fruit])
-        db.session.flush()
-
-        info = FruitInfo(
-            fruit_id=fruit.fruit_id,
-            weight=1.1,
-            price=1.5,
-            total_quantity=20,
-            available_quantity=15,
-            sell_by_date=datetime.utcnow() + timedelta(days=3),
-        )
-        db.session.add(info)
-        db.session.flush()
-
-        cart = Cart(
-            user_id=user.user_id,
-            fruit_id=fruit.fruit_id,
-            info_id=info.info_id,
-            quantity=3,
-            item_price=4.5,
-        )
-        db.session.add(cart)
-        db.session.commit()
-
-        assert cart.as_dict()["quantity"] == 3
-        assert "cart_id" in cart.as_dict()
-
-
-from unittest.mock import MagicMock
-
-from app import db
-from app.models.cart import Cart
-from app.models.fruit import Fruit, FruitInfo
-from app.models.users import User
-
-
-def test_cart_price_computation_mock(app):
-    with app.app_context():
-        fruit_info_mock = MagicMock()
-        fruit_info_mock.price = 3.5
-
-        cart = Cart(user_id=1, fruit_id=1, info_id=1, quantity=2, item_price=None)
-        cart.fruit_info = fruit_info_mock
-
-        cart.item_price = cart.quantity * cart.fruit_info.price
-        assert cart.item_price == 7.0
+        mock_query.filter_by.return_value.first.return_value = MagicMock()
+        assert Cart.exists(user_id=1, fruit_id=1)

@@ -9,7 +9,7 @@ from app.utils.log_config import get_logger
 
 logger = get_logger("order_service")
 
-def place_order(user_id: int) -> dict:
+def place_order(user_id: int, cart_ids: list[int]) -> dict:
     """
     Create an order from a user's cart.
 
@@ -22,6 +22,16 @@ def place_order(user_id: int) -> dict:
     dict
         Summary of the placed order.
     """
+    user = User.query.get(user_id)
+    if not user:
+        raise ValueError("User not found")
+
+    if not cart_ids:
+        raise ValueError("Cart is empty")
+
+    carts = Cart.query.filter(Cart.cart_id.in_(cart_ids), Cart.user_id == user_id).all()
+    if not carts:
+        raise ValueError("Cart is empty")
     try:
         cart_items = Cart.query.filter_by(user_id=user_id).all()
         if not cart_items:
@@ -79,4 +89,17 @@ def get_order_history(user_id: int) -> list:
     """
     orders = Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc()).all()
     logger.info("Fetched order history", user_id=user_id, count=len(orders))
+    return [o.as_dict() for o in orders]
+
+
+def get_all_orders() -> list:
+    """
+    Retrieve all orders in the system.
+
+    Returns
+    -------
+    list
+    """
+    orders = Order.query.order_by(Order.order_date.desc()).all()
+    logger.info("Fetched all orders", count=len(orders))
     return [o.as_dict() for o in orders]

@@ -1,7 +1,5 @@
-from typing import Optional
-
-from pydantic import BaseModel, conint
-
+from typing import List
+from pydantic import BaseModel, StrictInt, StrictStr
 
 class OrderValidation(BaseModel):
-    cart_ids: Optional[list[conint(ge=1)]] = None
+    cart_ids: List[StrictInt]

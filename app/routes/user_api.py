@@ -20,13 +20,21 @@ def add_user():
         return jsonify({"message": "User created", "user": user.to_dict()}), 201
     except ValidationError as ve:
         logger.warning("Validation failed", errors=ve.errors())
-        return jsonify({"error": "Validation error", "details": ve.errors()}), 400
+
+        # Clean ctx for serialization
+        cleaned_errors = []
+        for err in ve.errors():
+            if "ctx" in err and "error" in err["ctx"]:
+                err["ctx"]["error"] = str(err["ctx"]["error"])
+            cleaned_errors.append(err)
+
+        return jsonify({"error": "Validation error", "details": cleaned_errors}), 400
     except Exception as e:
         logger.exception("Unhandled error creating user")
         return jsonify({"error": str(e)}), 500
 
 
-@user_bp.route("/", methods=["GET"])
+@user_bp.route("/all", methods=["GET"])
 @swag_from("swagger_docs/user/get_all_users.yml")
 def get_all_users():
     """
@@ -60,7 +68,7 @@ def get_user_by_id(user_id):
         return jsonify({"error": str(e)}), 500
 
 
-@user_bp.route("/<int:user_id>", methods=["DELETE"])
+@user_bp.route("/delete/<int:user_id>", methods=["DELETE"])
 @swag_from("swagger_docs/user/delete_user.yml")
 def delete_user(user_id):
     """
@@ -69,8 +77,8 @@ def delete_user(user_id):
     try:
         deleted = user_service.delete_user_by_id(user_id)
         if deleted:
-            logger.info("User deleted", user_id=user_id)
-            return jsonify({"message": "User deleted"}), 200
+            logger.info("User deleted successfully!!", user_id=user_id)
+            return jsonify({"message": "User deleted successfully!!"}), 200
         else:
             logger.warning("User not found for deletion", user_id=user_id)
             return jsonify({"error": "User not found"}), 404
