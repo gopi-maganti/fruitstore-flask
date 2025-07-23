@@ -23,13 +23,28 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ec2-user/app
+            cd /home/ec2-user || exit 1
+
+            # Clone the repo if not exists
+            if [ ! -d \"app\" ]; then
+              git clone https://github.com/${{ github.repository }} app
+            fi
+
+            cd app
             git fetch --all --tags
             git checkout ${{ github.event.inputs.tag }}
-            source .venv/bin/activate
-            pip install -r requirements.txt
+
+            # Setup Python
+            sudo yum install -y python3 git
+            pip3 install --upgrade pip
+
+            # If you're using pipenv:
+            pip3 install pipenv
+            pipenv install --deploy --ignore-pipfile
+
             echo 'Fetching DB credentials from Secrets Manager'
-            python3 scripts/init_env.py
+            pipenv run python scripts/init_env.py
+
             echo 'Restarting Flask app'
             pkill gunicorn || true
-            nohup gunicorn app:app --bind 0.0.0.0:5000 &
+            nohup pipenv run gunicorn app:app --bind 0.0.0.0:5000 &
