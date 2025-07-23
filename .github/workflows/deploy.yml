@@ -26,8 +26,8 @@ jobs:
             cd /home/ec2-user || exit 1
 
             # Clone the repo if not exists
-            if [ ! -d \"app\" ]; then
-              git clone https://github.com/${{ github.repository }} app
+            if [ ! -d \"fruitstore-flask\" ]; then
+              git clone https://github.com/${{ github.repository }}
             fi
 
             cd app
