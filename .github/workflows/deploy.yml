@@ -5,7 +5,8 @@ on:
     inputs:
       tag:
         description: 'Release tag to deploy'
-        required: true
+        required: false
+        default: 'latest'
 
 jobs:
   deploy:
@@ -20,6 +21,8 @@ jobs:
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
+          timeout: 90m
+          command_timeout: 60m
           host: ${{ secrets.HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
@@ -41,13 +44,20 @@ jobs:
             git checkout ${{ github.event.inputs.tag }}
 
             echo "✅ Installing Python 3.12 from source"
+            echo "✅ Installing system libraries for Python 3.12"
             sudo yum groupinstall -y "Development Tools"
-            sudo yum install -y gcc openssl-devel bzip2-devel libffi-devel wget make zlib-devel xz-devel
+            sudo yum install -y \
+              gcc gcc-c++ make zlib-devel libffi-devel bzip2-devel \
+              xz-devel ncurses-devel readline-devel sqlite-devel \
+              openssl11-devel wget tk-devel gdbm-devel libuuid-devel lzma-sdk-devel
+
+            echo "✅ Downloading and building Python 3.12"
             cd /usr/src
             sudo wget https://www.python.org/ftp/python/3.12.2/Python-3.12.2.tgz
             sudo tar xzf Python-3.12.2.tgz
             cd Python-3.12.2
-            sudo ./configure --enable-optimizations
+            sudo ./configure --enable-optimizations --with-openssl=/usr/include/openssl11
+            sudo make -j$(nproc)
             sudo make altinstall
 
             echo "✅ Setting up virtual environment with Python 3.12"
