@@ -43,7 +43,7 @@ jobs:
 
       - name: Deploy Secrets
         run: |
-          python3 app/utils/secrets_manager.py
+          python3 scripts/secrets_manager.py
 
       - name: Deploy EC2 Instance
         run: |
