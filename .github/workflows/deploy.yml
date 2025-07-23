@@ -11,17 +11,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           ref: ${{ github.event.inputs.tag }}
+          fetch-depth: 0
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-          timeout: 90m
-          command_timeout: 60m
           host: ${{ secrets.HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          timeout: 90m
+          command_timeout: 60m
           script: |
             set -e
 
@@ -39,13 +39,15 @@ jobs:
             git fetch --all --tags
             git checkout ${{ github.event.inputs.tag }}
 
-            echo "✅ Installing Python 3.12 from source"
+            echo "✅ Removing old OpenSSL to avoid conflict"
+            sudo yum remove -y openssl-devel || true
+
             echo "✅ Installing system libraries for Python 3.12"
             sudo yum groupinstall -y "Development Tools"
             sudo yum install -y \
               gcc gcc-c++ make zlib-devel libffi-devel bzip2-devel \
               xz-devel ncurses-devel readline-devel sqlite-devel \
-              openssl11-devel wget tk-devel gdbm-devel libuuid-devel lzma-sdk-devel
+              openssl11-devel wget tk-devel gdbm-devel libuuid-devel
 
             echo "✅ Downloading and building Python 3.12"
             cd /usr/src
@@ -70,4 +72,4 @@ jobs:
             pkill gunicorn || true
             nohup gunicorn -w 4 -b 0.0.0.0:8000 run:app > gunicorn.log 2>&1 &
 
-            echo "✅ Deployment completed successfully."
+            echo "🎉 Deployment completed successfully for tag ${{ github.event.inputs.tag }}"
