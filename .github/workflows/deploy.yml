@@ -40,9 +40,19 @@ jobs:
             git fetch --all --tags
             git checkout ${{ github.event.inputs.tag }}
 
-            echo "✅ Setting up Python"
-            sudo yum install -y python3 git
-            python3 -m venv venv
+            echo "✅ Installing Python 3.12 from source"
+            sudo yum groupinstall -y "Development Tools"
+            sudo yum install -y gcc openssl-devel bzip2-devel libffi-devel wget make zlib-devel xz-devel
+            cd /usr/src
+            sudo wget https://www.python.org/ftp/python/3.12.2/Python-3.12.2.tgz
+            sudo tar xzf Python-3.12.2.tgz
+            cd Python-3.12.2
+            sudo ./configure --enable-optimizations
+            sudo make altinstall
+
+            echo "✅ Setting up virtual environment with Python 3.12"
+            cd /home/ec2-user/fruitstore-flask
+            /usr/local/bin/python3.12 -m venv venv
             source venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements/prod-requirements.txt
