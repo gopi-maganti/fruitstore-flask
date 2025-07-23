@@ -1,4 +1,4 @@
-name: Deploy to Prod
+name: Deploy
 
 on:
   workflow_dispatch:
@@ -19,9 +19,9 @@ jobs:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.PROD_HOST }}
+          host: ${{ secrets.HOST }}
           username: ec2-user
-          key: ${{ secrets.PROD_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ec2-user/app
             git fetch --all --tags

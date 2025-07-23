@@ -43,14 +43,7 @@ jobs:
 
       - name: Deploy Secrets
         run: |
-          aws cloudformation deploy \
-            --stack-name fruitstore-secrets \
-            --template-file cloudformation/secrets_template.yml \
-            --parameter-overrides \
-              DBUsername=fruituser \
-              DBPassword=SuperSecurePass123 \
-              DBHost=fruitstore-cluster.cluster-c69cq4mcm794.us-east-1.rds.amazonaws.com \
-              DBName=fruitstore
+          python3 app.utils.secrets_manager.py
 
       - name: Deploy EC2 Instance
         run: |
