@@ -78,7 +78,10 @@ jobs:
             echo "📍 Python: $(which python)"
             echo "📍 Pip: $(which pip)"
 
-            echo "📦 Installing project dependencies"
+            echo "♻️ Cleaning existing packages in venv"
+            pip freeze | xargs pip uninstall -y || true
+
+            echo "📦 Re-upgrading pip and reinstalling fresh dependencies"
             pip install --upgrade pip
             pip install -r requirements.txt
 
