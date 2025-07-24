@@ -85,12 +85,14 @@ jobs:
             pip install -r requirements.txt
 
             echo "✅ Fetching DB credentials from AWS Secrets Manager"
-            VENV_PYTHON="./venv/bin/python"
-            VENV_PIP="./venv/bin/pip"
+            VENV_PYTHON="$(pwd)/venv/bin/python"
+            VENV_PIP="$(pwd)/venv/bin/pip"
 
-            echo "📍 Debug: Python version -> $($VENV_PYTHON --version)"
-            echo "📍 Debug: Pip packages -> $($VENV_PIP freeze | grep boto3 || true)"
+            echo "📍 Debug: Python binary -> $VENV_PYTHON"
+            $VENV_PYTHON --version
+            $VENV_PIP freeze | grep boto3 || echo "📍 boto3 not in freeze list"
 
+            echo "📍 Testing boto3 import..."
             if ! $VENV_PYTHON -c "import boto3" 2>/dev/null; then
               echo "⚠️ boto3 not found in venv. Reinstalling..."
               $VENV_PIP install boto3
@@ -98,8 +100,8 @@ jobs:
               $VENV_PYTHON -c "import boto3; print('✅ boto3 import successful')"
             fi
 
+            echo "✅ Running init_env with venv Python"
             $VENV_PYTHON scripts/init_env.py
-
 
             echo "✅ Restarting Flask app with Gunicorn"
             pkill gunicorn || true
