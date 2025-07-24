@@ -48,6 +48,14 @@ jobs:
             git fetch --all --tags
             git checkout ${{ github.event.inputs.tag }}
 
+            echo "✅ Setting up pyenv"
+            if [ ! -d "$HOME/.pyenv" ]; then
+              echo "Pyenv not found, installing..."
+            else
+              echo "Pyenv already installed / partially installed, removing existing installation."
+              rm -rf /home/ec2-user/.pyenv
+            fi
+
             echo "✅ Installing pyenv"
             curl https://pyenv.run | bash
 
