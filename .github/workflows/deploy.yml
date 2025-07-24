@@ -28,10 +28,14 @@ jobs:
             echo "✅ Navigating to home directory"
             cd /home/ec2-user
 
-            echo "✅ Installing dependencies for pyenv and Python build"
+            echo "✅ Installing all dependencies for pyenv and Python build"
             sudo yum groupinstall -y "Development Tools"
-            sudo yum install -y gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel \
-              openssl11 openssl11-devel libffi-devel wget make git
+            sudo yum install -y \
+              gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel \
+              openssl11 openssl11-devel libffi-devel wget make git \
+              tk-devel gdbm-devel xz-devel ncurses-devel patch \
+              libuuid-devel libtirpc-devel libnsl2 libnsl2-devel curl-devel \
+              libxcrypt libxcrypt-devel pkgconfig
 
             echo "✅ Cloning repo if not exists"
             if [ ! -d "fruitstore-flask" ]; then
@@ -47,7 +51,8 @@ jobs:
             echo "✅ Installing pyenv"
             curl https://pyenv.run | bash
 
-            export PATH="$HOME/.pyenv/bin:$PATH"
+            export PYENV_ROOT="$HOME/.pyenv"
+            export PATH="$PYENV_ROOT/bin:$PATH"
             eval "$(pyenv init -)"
             eval "$(pyenv virtualenv-init -)"
 
@@ -55,6 +60,7 @@ jobs:
             export CFLAGS="-I/usr/include/openssl11"
             export LDFLAGS="-L/usr/lib64/openssl11 -Wl,-rpath=/usr/lib64/openssl11"
             export PKG_CONFIG_PATH="/usr/lib64/openssl11/pkgconfig"
+            export LD_LIBRARY_PATH="/usr/lib64:/usr/lib64/openssl11"
 
             pyenv install -s 3.12.2
             pyenv global 3.12.2
