@@ -24,7 +24,7 @@ jobs:
           command_timeout: 60m
           script: |
             set -e
-
+            
             echo "✅ Navigating to home directory"
             cd /home/ec2-user
 
@@ -42,9 +42,8 @@ jobs:
 
             echo "📥 Installing pyenv"
             curl https://pyenv.run | bash
-
             export PYENV_ROOT="$HOME/.pyenv"
-            export PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
+            export PATH="$PYENV_ROOT/bin:$PATH"
             eval "$(pyenv init -)"
             eval "$(pyenv virtualenv-init -)"
 
@@ -53,7 +52,6 @@ jobs:
             export LDFLAGS="-L/usr/lib64/openssl11 -Wl,-rpath=/usr/lib64/openssl11"
             export PKG_CONFIG_PATH="/usr/lib64/openssl11/pkgconfig"
             export LD_LIBRARY_PATH="$PYENV_ROOT/versions/3.12.2/lib:$LD_LIBRARY_PATH"
-
             pyenv install -s 3.12.2
             pyenv global 3.12.2
 
@@ -61,20 +59,20 @@ jobs:
 
             echo "🧬 Cloning repo if not exists"
             if [ ! -d "fruitstore-flask" ]; then
-              git clone https://github.com/${{ github.repository }}.git
+              git clone https://github.com/gopi-maganti/fruitstore-flask.git
             fi
 
             cd fruitstore-flask
 
             echo "🌿 Checking out release tag"
             git fetch --all --tags
-            git checkout ${{ github.event.inputs.tag }}
+            git checkout "$RELEASE_TAG"
 
             echo "🐍 Creating virtual environment"
             python -m venv venv
             source venv/bin/activate
-
             export PATH="$(pwd)/venv/bin:$PATH"
+
             echo "📍 Python: $(which python)"
             echo "📍 Pip: $(which pip)"
 
@@ -86,18 +84,14 @@ jobs:
             pip install -r requirements.txt
 
             echo "🔎 Verifying boto3 inside venv"
-            VENV_PYTHON="$(pwd)/venv/bin/python"
-            if ! $VENV_PYTHON -c "import boto3" 2>/dev/null; then
-              echo "⚠️ boto3 missing or broken. Reinstalling..."
-              $(pwd)/venv/bin/pip install boto3
-            fi
-            $VENV_PYTHON -c "import boto3; print('✅ boto3 import successful')"
+            source venv/bin/activate
+            python -c "import boto3; print('✅ boto3 import successful')"
 
             echo "🔐 Running DB secrets init script"
-            $VENV_PYTHON scripts/init_env.py
+            python scripts/init_env.py
 
             echo "🚀 Restarting Flask app using Gunicorn"
             pkill gunicorn || true
             nohup gunicorn -w 4 -b 0.0.0.0:8000 run:app > gunicorn.log 2>&1 &
 
-            echo "🎉 Deployment completed successfully for tag ${{ github.event.inputs.tag }}"
+            echo "🎉 Deployment completed successfully for tag $RELEASE_TAG"
