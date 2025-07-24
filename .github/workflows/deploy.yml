@@ -89,20 +89,20 @@ jobs:
             pip install -r requirements.txt
 
             echo "🔎 Verifying boto3 inside venv"
-            python -c "import boto3" 2>/dev/null || {
+            if ! ./venv/bin/python -c "import boto3" 2>/dev/null; then
               echo "⚠️ boto3 import failed. Reinstalling..."
-              pip install boto3
-              python -c "import boto3" || {
-                echo "❌ boto3 still not found. Exiting."
+              ./venv/bin/pip install --force-reinstall boto3 botocore
+              if ! ./venv/bin/python -c "import boto3"; then
+                echo "❌ boto3 still not found after reinstall. Exiting."
                 exit 1
-              }
-            }
+              fi
+            fi
 
             echo "🔐 Running DB secrets init script"
-            python scripts/init_env.py
+            ./venv/bin/python scripts/init_env.py
 
             echo "🚀 Restarting Flask app using Gunicorn"
             pkill gunicorn || true
-            nohup gunicorn -w 4 -b 0.0.0.0:8000 run:app > gunicorn.log 2>&1 &
+            nohup ./venv/bin/gunicorn -w 4 -b 0.0.0.0:8000 run:app > gunicorn.log 2>&1 &
 
             echo "🎉 Deployment completed successfully for tag ${{ github.event.inputs.tag }}"
