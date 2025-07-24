@@ -28,8 +28,11 @@ jobs:
             echo "✅ Navigating to home directory"
             cd /home/ec2-user
 
-            echo "✅ Installing all dependencies for pyenv and Python build"
-            sudo yum groupinstall -y "Development Tools"
+            echo "🧹 Cleaning previous pyenv installation"
+            rm -rf "$HOME/.pyenv"
+
+            echo "📦 Installing dependencies for Python build"
+            sudo yum groupinstall -y "Development Tools" || true
             sudo yum install -y \
               gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel \
               openssl11 openssl11-devel libffi-devel wget make git \
@@ -37,19 +40,15 @@ jobs:
               libuuid-devel libtirpc-devel curl-devel \
               pkgconfig
 
-            echo "✅ Removing pyenv if it exists"
-            rm -rf $HOME/.pyenv
-
-            echo "✅ Installing pyenv"
+            echo "📥 Installing pyenv"
             curl https://pyenv.run | bash
 
             export PYENV_ROOT="$HOME/.pyenv"
-            export PATH="$PYENV_ROOT/bin:$PATH"
-            export PATH="$PYENV_ROOT/shims:$PATH"
+            export PATH="$PYENV_ROOT/bin:$PYENV_ROOT/shims:$PATH"
             eval "$(pyenv init -)"
             eval "$(pyenv virtualenv-init -)"
 
-            echo "✅ Installing Python 3.12.2 with pyenv"
+            echo "🐍 Installing Python 3.12.2 via pyenv"
             export CFLAGS="-I/usr/include/openssl11"
             export LDFLAGS="-L/usr/lib64/openssl11 -Wl,-rpath=/usr/lib64/openssl11"
             export PKG_CONFIG_PATH="/usr/lib64/openssl11/pkgconfig"
@@ -58,52 +57,43 @@ jobs:
             pyenv install -s 3.12.2
             pyenv global 3.12.2
 
-            echo "✅ Adding Python 3.12.2 bin directory to PATH"
-            export PATH="$PYENV_ROOT/versions/3.12.2/bin:$PATH"
+            echo "✅ Python version: $(python --version)"
 
-            echo "✅ Cloning repo if not exists"
+            echo "🧬 Cloning repo if not exists"
             if [ ! -d "fruitstore-flask" ]; then
               git clone https://github.com/${{ github.repository }}.git
             fi
 
             cd fruitstore-flask
 
-            echo "✅ Checking out tag ${{ github.event.inputs.tag }}"
+            echo "🌿 Checking out release tag"
             git fetch --all --tags
             git checkout ${{ github.event.inputs.tag }}
 
-            echo "✅ Creating virtual environment"
+            echo "🐍 Creating virtual environment"
             python -m venv venv
             source venv/bin/activate
+
             export PATH="$(pwd)/venv/bin:$PATH"
+            echo "📍 Python: $(which python)"
+            echo "📍 Pip: $(which pip)"
 
-            echo "📍 Debug: Python in use -> $(which python)"
-            echo "📍 Debug: Pip in use    -> $(which pip)"
-
-            echo "✅ Installing app dependencies"
+            echo "📦 Installing project dependencies"
             pip install --upgrade pip
             pip install -r requirements.txt
 
-            echo "✅ Fetching DB credentials from AWS Secrets Manager"
+            echo "🔎 Verifying boto3 inside venv"
             VENV_PYTHON="$(pwd)/venv/bin/python"
-            VENV_PIP="$(pwd)/venv/bin/pip"
-
-            echo "📍 Debug: Python binary -> $VENV_PYTHON"
-            $VENV_PYTHON --version
-            $VENV_PIP freeze | grep boto3 || echo "📍 boto3 not in freeze list"
-
-            echo "📍 Testing boto3 import..."
             if ! $VENV_PYTHON -c "import boto3" 2>/dev/null; then
-              echo "⚠️ boto3 not found in venv. Reinstalling..."
-              $VENV_PIP install boto3
-              echo "✅ boto3 installed. Verifying again..."
-              $VENV_PYTHON -c "import boto3; print('✅ boto3 import successful')"
+              echo "⚠️ boto3 missing or broken. Reinstalling..."
+              $(pwd)/venv/bin/pip install boto3
             fi
+            $VENV_PYTHON -c "import boto3; print('✅ boto3 import successful')"
 
-            echo "✅ Running init_env with venv Python"
+            echo "🔐 Running DB secrets init script"
             $VENV_PYTHON scripts/init_env.py
 
-            echo "✅ Restarting Flask app with Gunicorn"
+            echo "🚀 Restarting Flask app using Gunicorn"
             pkill gunicorn || true
             nohup gunicorn -w 4 -b 0.0.0.0:8000 run:app > gunicorn.log 2>&1 &
 
