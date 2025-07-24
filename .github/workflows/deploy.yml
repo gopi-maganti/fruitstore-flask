@@ -75,6 +75,10 @@ jobs:
             echo "✅ Creating virtual environment"
             python -m venv venv
             source venv/bin/activate
+            export PATH="$(pwd)/venv/bin:$PATH"
+
+            echo "📍 Debug: Python in use -> $(which python)"
+            echo "📍 Debug: Pip in use    -> $(which pip)"
 
             echo "✅ Installing app dependencies"
             pip install --upgrade pip
