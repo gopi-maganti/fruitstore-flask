@@ -85,7 +85,13 @@ jobs:
             pip install -r requirements.txt
 
             echo "✅ Fetching DB credentials from AWS Secrets Manager"
-            python scripts/init_env.py
+            if ! ./venv/bin/python -c "import boto3" 2>/dev/null; then
+              echo "⚠️ boto3 not found, reinstalling..."
+              ./venv/bin/pip install boto3
+            fi
+
+            ./venv/bin/python scripts/init_env.py
+
 
             echo "✅ Restarting Flask app with Gunicorn"
             pkill gunicorn || true
