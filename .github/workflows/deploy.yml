@@ -34,8 +34,32 @@ jobs:
               gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel \
               openssl11 openssl11-devel libffi-devel wget make git \
               tk-devel gdbm-devel xz-devel ncurses-devel patch \
-              libuuid-devel libtirpc-devel libnsl2 libnsl2-devel curl-devel \
-              libxcrypt libxcrypt-devel pkgconfig
+              libuuid-devel libtirpc-devel curl-devel \
+              pkgconfig
+
+            echo "✅ Removing pyenv if it exists"
+            rm -rf $HOME/.pyenv
+
+            echo "✅ Installing pyenv"
+            curl https://pyenv.run | bash
+
+            export PYENV_ROOT="$HOME/.pyenv"
+            export PATH="$PYENV_ROOT/bin:$PATH"
+            export PATH="$PYENV_ROOT/shims:$PATH"
+            eval "$(pyenv init -)"
+            eval "$(pyenv virtualenv-init -)"
+
+            echo "✅ Installing Python 3.12.2 with pyenv"
+            export CFLAGS="-I/usr/include/openssl11"
+            export LDFLAGS="-L/usr/lib64/openssl11 -Wl,-rpath=/usr/lib64/openssl11"
+            export PKG_CONFIG_PATH="/usr/lib64/openssl11/pkgconfig"
+            export LD_LIBRARY_PATH="$PYENV_ROOT/versions/3.12.2/lib:$LD_LIBRARY_PATH"
+
+            pyenv install -s 3.12.2
+            pyenv global 3.12.2
+
+            echo "✅ Adding Python 3.12.2 bin directory to PATH"
+            export PATH="$PYENV_ROOT/versions/3.12.2/bin:$PATH"
 
             echo "✅ Cloning repo if not exists"
             if [ ! -d "fruitstore-flask" ]; then
@@ -47,31 +71,6 @@ jobs:
             echo "✅ Checking out tag ${{ github.event.inputs.tag }}"
             git fetch --all --tags
             git checkout ${{ github.event.inputs.tag }}
-
-            echo "✅ Setting up pyenv"
-            if [ ! -d "$HOME/.pyenv" ]; then
-              echo "Pyenv not found, installing..."
-            else
-              echo "Pyenv already installed / partially installed, removing existing installation."
-              rm -rf /home/ec2-user/.pyenv
-            fi
-
-            echo "✅ Installing pyenv"
-            curl https://pyenv.run | bash
-
-            export PYENV_ROOT="$HOME/.pyenv"
-            export PATH="$PYENV_ROOT/bin:$PATH"
-            eval "$(pyenv init -)"
-            eval "$(pyenv virtualenv-init -)"
-
-            echo "✅ Installing Python 3.12.2 with pyenv"
-            export CFLAGS="-I/usr/include/openssl11"
-            export LDFLAGS="-L/usr/lib64/openssl11 -Wl,-rpath=/usr/lib64/openssl11"
-            export PKG_CONFIG_PATH="/usr/lib64/openssl11/pkgconfig"
-            export LD_LIBRARY_PATH="/usr/lib64:/usr/lib64/openssl11"
-
-            pyenv install -s 3.12.2
-            pyenv global 3.12.2
 
             echo "✅ Creating virtual environment"
             python -m venv venv
