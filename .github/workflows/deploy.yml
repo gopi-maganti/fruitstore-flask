@@ -59,7 +59,7 @@ jobs:
             pyenv install -s 3.12.2
             pyenv global 3.12.2
 
-            echo "✅ Python version: $(python --version)"
+            echo "✅ Python version: $(pyenv which python)"
 
             echo "🧬 Cloning repo if not exists"
             if [ ! -d "fruitstore-flask" ]; then
@@ -72,14 +72,15 @@ jobs:
             git fetch --all --tags
             git checkout "refs/tags/${{ github.event.inputs.tag }}"
 
-            echo "🐍 Creating virtual environment"
-            python -m venv venv
+            echo "🐍 Creating virtual environment with Python 3.12.2"
+            "$PYENV_ROOT/versions/3.12.2/bin/python" -m venv venv
             source venv/bin/activate
             export PATH="$(pwd)/venv/bin:$PATH"
             export PYTHONPATH="$(pwd)/venv/lib/python3.12/site-packages"
 
             echo "📍 Python: $(which python)"
             echo "📍 Pip: $(which pip)"
+            ./venv/bin/python --version
 
             echo "♻️ Cleaning existing packages in venv"
             pip freeze | xargs pip uninstall -y || true
@@ -89,20 +90,4 @@ jobs:
             pip install -r requirements.txt
 
             echo "🔎 Verifying boto3 inside venv"
-            if ! ./venv/bin/python -c "import boto3" 2>/dev/null; then
-              echo "⚠️ boto3 import failed. Reinstalling..."
-              ./venv/bin/pip install --force-reinstall boto3 botocore
-              if ! ./venv/bin/python -c "import boto3"; then
-                echo "❌ boto3 still not found after reinstall. Exiting."
-                exit 1
-              fi
-            fi
-
-            echo "🔐 Running DB secrets init script"
-            ./venv/bin/python scripts/init_env.py
-
-            echo "🚀 Restarting Flask app using Gunicorn"
-            pkill gunicorn || true
-            nohup ./venv/bin/gunicorn -w 4 -b 0.0.0.0:8000 run:app > gunicorn.log 2>&1 &
-
-            echo "🎉 Deployment completed successfully for tag ${{ github.event.inputs.tag }}"
+            ./venv/bin/python -c
