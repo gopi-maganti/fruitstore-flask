@@ -1,4 +1,4 @@
-name: Deploy the Flask App
+name: Deploy EC2 Infrastructure
 
 on:
   workflow_dispatch:
@@ -21,22 +21,18 @@ jobs:
         with:
           ref: ${{ github.event.inputs.tag }}
 
-      - name: Read EC2 Config from cloudformation.json
-        id: parse_config
-        run: |
-          CONFIG=$(jq '.EC2Config' cloudformation.json)
-          echo "CONFIG=$CONFIG" >> $GITHUB_ENV
-          echo "AMI_ID=$(echo $CONFIG | jq -r '.AmiId')" >> $GITHUB_ENV
-          echo "INSTANCE_TYPE=$(echo $CONFIG | jq -r '.InstanceType')" >> $GITHUB_ENV
-          echo "KEY_NAME=$(echo $CONFIG | jq -r '.KeyName')" >> $GITHUB_ENV
-          echo "REGION=$(echo $CONFIG | jq -r '.Region')" >> $GITHUB_ENV
-          echo "TAG_VALUE=$(echo $CONFIG | jq -r '.TagValue')" >> $GITHUB_ENV
-
-      - name: Call EC2 Deployment Action
-        uses: gopi-maganti/AWS-EC2.Workflow/.github/actions/deploy
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          region: ${{ env.REGION }}
-          ami-id: ${{ env.AMI_ID }}
-          instance-type: ${{ env.INSTANCE_TYPE }}
-          tag-value: ${{ env.TAG_VALUE }}
-          script-path: scripts/setup.sh
+          role-to-assume: arn:aws:iam::611771051034:role/github-actions-deployment-role
+          aws-region: us-east-1
+
+      - name: Deploy CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --stack-name fruitstore-ec2-stack \
+            --template-file cloudformation/templates/template.json \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides InstanceType=t2.micro \
+            --tags Project=FruitStore Environment=Dev \
+            --no-fail-on-empty-changeset

@@ -1,30 +1,31 @@
-name: Deploy Full Infrastructure
+name: Deploy CloudFormation Stack
 
 on:
   workflow_dispatch:
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Configure AWS credentials via secrets
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::611771051034:role/github-actions-deployment-role
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Deploy CloudFormation Stack via AWS CLI
+      - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \
             --stack-name fruitstore-ec2-stack \
             --template-file cloudformation/templates/template.json \
             --capabilities CAPABILITY_NAMED_IAM \
-            --parameter-overrides InstanceType=t2.micro \
-            --tags Project=FruitStore Environment=Dev
+            --parameter-overrides \
+              InstanceType=t2.micro \
+              KeyName=fruitstore-key-pair \
+            --tags Project=FruitStore Environment=Dev \
+            --no-fail-on-empty-changeset
