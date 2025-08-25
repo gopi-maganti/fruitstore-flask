@@ -9,6 +9,13 @@
    }
   }
  },
+ "Parameters": {
+  "InstanceType": {
+   "Default": "t2.micro",
+   "Description": "EC2 instance type (e.g., t2.micro, t3.small)",
+   "Type": "String"
+  }
+ },
  "Resources": {
   "AttachGateway": {
    "Properties": {
@@ -45,7 +52,9 @@
      "Ref": "SSMInstanceProfile"
     },
     "ImageId": "ami-0e1989e836322f58b",
-    "InstanceType": "t2.micro",
+    "InstanceType": {
+     "Ref": "InstanceType"
+    },
     "KeyName": {
      "Ref": "FruitstoreKeyPair"
     },
