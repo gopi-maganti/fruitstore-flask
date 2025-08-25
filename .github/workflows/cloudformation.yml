@@ -9,10 +9,18 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Deploy CloudFormation Stack
-        uses: aws-actions/aws-cloudformation-github-deploy@v1
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          name: MyAppStack
-          template: cloudformation.json
-          no-fail-on-empty-changeset: true
+          role-to-assume: arn:aws:iam::611771051034:role/github-actions-deployment-role
+          aws-region: us-east-1
+
+      - name: Deploy CloudFormation Stack via AWS CLI
+        run: |
+          aws cloudformation deploy \
+            --stack-name fruitstore-ec2-stack \
+            --template-file cloudformation/templates/template.json \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides InstanceType=t2.micro \
+            --tags Project=FruitStore Environment=Dev
