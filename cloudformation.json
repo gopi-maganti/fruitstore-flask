@@ -3,6 +3,7 @@
   "TemplateBodyFile": "cloudformation/templates/template.json",
   "Capabilities": ["CAPABILITY_NAMED_IAM"],
   "Parameters": {
+    "Region": "us-east-1",
     "AccountId": "611771051034",
     "InstanceType": "t2.micro"
   },
