@@ -16,11 +16,12 @@ class User(db.Model):
         return cls.query.filter_by(**kwargs).first() is not None
 
     def save(self):
-        if User.exists(email=self.email) or (self.phone_number and User.exists(phone_number=self.phone_number)):
+        if User.exists(email=self.email) or (
+            self.phone_number and User.exists(phone_number=self.phone_number)
+        ):
             raise ValueError("User with these details already exists.")
         db.session.add(self)
         db.session.commit()
-
 
     def to_dict(self):
         return {
@@ -29,4 +30,3 @@ class User(db.Model):
             "email": self.email,
             "phone_number": self.phone_number,
         }
-

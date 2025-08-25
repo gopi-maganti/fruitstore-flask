@@ -1,27 +1,34 @@
-import pytest
-from unittest.mock import patch, MagicMock
 from datetime import datetime
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from app.services import order_service
 
 
 @pytest.fixture(scope="module")
 def app_context():
     from app import create_app
+
     app = create_app()
     with patch("app.extensions.db.session.remove"):  # optional safety net
         with app.app_context():
             yield
 
+
 # -------------------------
 # ✅ place_order tests
 # -------------------------
+
 
 @patch("app.services.order_service.db.session.commit")
 @patch("app.services.order_service.db.session.delete")
 @patch("app.services.order_service.db.session.add")
 @patch("app.services.order_service.Cart.query")
 @patch("app.services.order_service.User.query")
-def test_place_order_success(mock_user_q, mock_cart_q, mock_add, mock_delete, mock_commit, app_context):
+def test_place_order_success(
+    mock_user_q, mock_cart_q, mock_add, mock_delete, mock_commit, app_context
+):
     user = MagicMock()
     mock_user_q.get.return_value = user
 
@@ -90,10 +97,14 @@ def test_place_order_insufficient_stock(mock_user_q, mock_cart_q, app_context):
 
 
 @patch("app.services.order_service.db.session.rollback")
-@patch("app.services.order_service.db.session.commit", side_effect=Exception("DB failure"))
+@patch(
+    "app.services.order_service.db.session.commit", side_effect=Exception("DB failure")
+)
 @patch("app.services.order_service.Cart.query")
 @patch("app.services.order_service.User.query")
-def test_place_order_commit_fail(mock_user_q, mock_cart_q, mock_commit, mock_rollback, app_context):
+def test_place_order_commit_fail(
+    mock_user_q, mock_cart_q, mock_commit, mock_rollback, app_context
+):
     user = MagicMock()
     mock_user_q.get.return_value = user
 
@@ -116,11 +127,14 @@ def test_place_order_commit_fail(mock_user_q, mock_cart_q, mock_commit, mock_rol
 # ✅ get_order_history tests
 # -------------------------
 
+
 @patch("app.services.order_service.Order.query")
 def test_get_order_history_success(mock_query, app_context):
     mock_order = MagicMock()
     mock_order.as_dict.return_value = {"id": 1}
-    mock_query.filter_by.return_value.order_by.return_value.all.return_value = [mock_order]
+    mock_query.filter_by.return_value.order_by.return_value.all.return_value = [
+        mock_order
+    ]
 
     result = order_service.get_order_history(1)
     assert isinstance(result, list)
@@ -138,9 +152,11 @@ def test_get_order_history_exception(mock_query, app_context):
 # ✅ get_all_orders tests
 # -------------------------
 
+
 class FakeOrder:
     def as_dict(self):
         return {"id": 1}
+
 
 @patch("app.services.order_service.Order.query")
 def test_get_all_orders_success(mock_query, app_context):
@@ -151,7 +167,8 @@ def test_get_all_orders_success(mock_query, app_context):
 
 @patch("app.services.order_service.Order.query")
 def test_get_order_history_success(mock_query, app_context):
-    mock_query.filter_by.return_value.order_by.return_value.all.return_value = [FakeOrder()]
+    mock_query.filter_by.return_value.order_by.return_value.all.return_value = [
+        FakeOrder()
+    ]
     result = order_service.get_order_history(1)
     assert result == [{"id": 1}]
-

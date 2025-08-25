@@ -3,9 +3,11 @@ import os
 from flasgger import Swagger
 from flask import Flask
 from flask_cors import CORS
-from app.utils.log_config import setup_logging
+
 from app.config.config import Config
 from app.extensions import db
+from app.utils.log_config import setup_logging
+
 
 def create_app():
     setup_logging()

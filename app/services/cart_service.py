@@ -48,11 +48,22 @@ def add_to_cart(user_id: int, fruit_id: int, quantity: int) -> Cart:
     try:
         db.session.add(cart)
         db.session.commit()
-        logger.info("Cart item successfully added", cart_id=cart.cart_id, user_id=user_id, fruit_id=fruit_id, quantity=quantity)
+        logger.info(
+            "Cart item successfully added",
+            cart_id=cart.cart_id,
+            user_id=user_id,
+            fruit_id=fruit_id,
+            quantity=quantity,
+        )
         return cart
     except Exception as e:
         db.session.rollback()
-        logger.exception("Failed to add cart item", user_id=user_id, fruit_id=fruit_id, quantity=quantity)
+        logger.exception(
+            "Failed to add cart item",
+            user_id=user_id,
+            fruit_id=fruit_id,
+            quantity=quantity,
+        )
         raise
 
 

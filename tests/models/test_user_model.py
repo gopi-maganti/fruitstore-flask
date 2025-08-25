@@ -1,9 +1,11 @@
-import uuid
-import pytest
-from unittest.mock import patch
-from app.models.users import User
-from app import db
 import random
+import uuid
+from unittest.mock import patch
+
+import pytest
+
+from app import db
+from app.models.users import User
 
 
 def generate_test_user():
@@ -13,7 +15,7 @@ def generate_test_user():
     return {
         "name": f"Test-{unique_suffix}",
         "email": f"user-{uid}@example.com",
-        "phone_number": random_phone
+        "phone_number": random_phone,
     }
 
 
@@ -41,7 +43,7 @@ def test_user_exists(mock_exists, app):
 
 def test_user_save_duplicate_raises(app):
     with app.app_context():
-        
+
         email = "duptest@example.com"
         phone = "9876543210"
 
@@ -53,7 +55,6 @@ def test_user_save_duplicate_raises(app):
 
         with pytest.raises(ValueError, match="User with these details already exists."):
             user2.save()
-
 
 
 def test_user_repr():

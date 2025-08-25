@@ -1,10 +1,12 @@
+import io
 import os
 import random
 import sys
-from datetime import datetime, timedelta
-import io
 import uuid
+from datetime import datetime, timedelta
+
 import pytest
+
 from aws_utils import s3_utils
 from aws_utils.s3_utils import upload_to_s3
 
@@ -25,6 +27,7 @@ from app.models.cart import Cart
 from app.models.fruit import Fruit, FruitInfo
 from app.models.users import User
 
+
 # ✅ Core app fixture using in-memory DB
 @pytest.fixture(scope="module")
 def app():
@@ -42,14 +45,18 @@ def app():
         db.session.remove()
         db.drop_all()
 
+
 @pytest.fixture(scope="module")
 def client(app):
     return app.test_client()
 
+
 # ✅ Global DB cleanup between tests
 import pytest
 from flask import has_app_context
+
 from app import db
+
 
 @pytest.fixture(autouse=True)
 def cleanup_db():
@@ -68,16 +75,16 @@ def add_user():
             email = f"{name.lower()}_{random.randint(1000,9999)}@example.com"
         if phone is None:
             phone = f"{random.randint(1000000000,9999999999)}"
-        
-        response = client.post("/user/add", json={
-            "name": name,
-            "email": email,
-            "phone_number": phone
-        })
+
+        response = client.post(
+            "/user/add", json={"name": name, "email": email, "phone_number": phone}
+        )
 
         user = User.query.filter_by(email=email).first()
         return response, user.user_id
+
     return _add_user
+
 
 # ✅ Add a fruit dynamically with image
 @pytest.fixture
@@ -100,18 +107,25 @@ def add_fruit():
         }
         data = {k: v for k, v in fruit_data.items() if k != "image"}
         return client.post(
-            "/fruit/add", data={**data, "image": image}, content_type="multipart/form-data"
+            "/fruit/add",
+            data={**data, "image": image},
+            content_type="multipart/form-data",
         )
+
     return _add_fruit
+
 
 # ✅ Setup order data in DB (user, fruit, cart)
 import uuid
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
+
 from app import db
-from app.models.users import User
-from app.models.fruit import Fruit, FruitInfo
 from app.models.cart import Cart
+from app.models.fruit import Fruit, FruitInfo
+from app.models.users import User
+
 
 @pytest.fixture
 def setup_order_data(app):
@@ -123,7 +137,7 @@ def setup_order_data(app):
         user = User(
             name=f"OrderFixtureUser-{uid}",
             email=f"fixtureuser-{uid}@example.com",
-            phone_number=f"10101{uid[:5]}"
+            phone_number=f"10101{uid[:5]}",
         )
         db.session.add(user)
         db.session.flush()
@@ -135,7 +149,7 @@ def setup_order_data(app):
             color="Red",
             size="Medium",
             has_seeds=True,
-            image_url="https://example.com/fruit.jpg"
+            image_url="https://example.com/fruit.jpg",
         )
         db.session.add(fruit)
         db.session.flush()
@@ -147,7 +161,7 @@ def setup_order_data(app):
             price=4.0,
             total_quantity=50,
             available_quantity=50,
-            sell_by_date=datetime.utcnow() + timedelta(days=10)
+            sell_by_date=datetime.utcnow() + timedelta(days=10),
         )
         db.session.add(info)
         db.session.flush()
@@ -158,7 +172,7 @@ def setup_order_data(app):
             fruit_id=fruit.fruit_id,
             info_id=info.info_id,
             quantity=3,
-            item_price=12.0
+            item_price=12.0,
         )
         db.session.add(cart)
         db.session.commit()
@@ -167,11 +181,13 @@ def setup_order_data(app):
             "user_id": user.user_id,
             "cart_id": cart.cart_id,
             "fruit_id": fruit.fruit_id,
-            "info_id": info.info_id
+            "info_id": info.info_id,
         }
+
 
 @pytest.fixture(autouse=True)
 def mock_s3_upload(monkeypatch):
     def fake_upload_to_s3(file, bucket, key, **kwargs):
         return "https://example.com/mock-image.jpg"
+
     monkeypatch.setattr(s3_utils, "upload_to_s3", fake_upload_to_s3)

@@ -23,20 +23,16 @@ class Cart(db.Model):
         "FruitInfo", backref=db.backref("cart", passive_deletes=True)
     )
 
-
     @classmethod
     def exists(cls, **kwargs):
         return cls.query.filter_by(**kwargs).first() is not None
-
 
     def save(self):
         db.session.add(self)
         db.session.commit()
 
-
     def __repr__(self):
         return f"<Cart {self.cart_id}, User: {self.user_id}, Fruit: {self.fruit_id}, Quantity: {self.quantity}>"
-
 
     def as_dict(self):
         return {

@@ -1,0 +1,205 @@
+{
+ "AWSTemplateFormatVersion": "2010-09-09",
+ "Description": "EC2 infrastructure with SSM, KeyPair, IAM",
+ "Outputs": {
+  "PublicIP": {
+   "Description": "Public IP of EC2",
+   "Value": {
+    "Ref": "FruitstoreInstance"
+   }
+  }
+ },
+ "Resources": {
+  "AttachGateway": {
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "FruitstoreIGW"
+    },
+    "VpcId": {
+     "Ref": "FruitstoreVPC"
+    }
+   },
+   "Type": "AWS::EC2::VPCGatewayAttachment"
+  },
+  "DefaultRoute": {
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "FruitstoreIGW"
+    },
+    "RouteTableId": {
+     "Ref": "PublicRouteTable"
+    }
+   },
+   "Type": "AWS::EC2::Route"
+  },
+  "FruitstoreIGW": {
+   "Properties": {
+    "Tags": []
+   },
+   "Type": "AWS::EC2::InternetGateway"
+  },
+  "FruitstoreInstance": {
+   "Properties": {
+    "IamInstanceProfile": {
+     "Ref": "SSMInstanceProfile"
+    },
+    "ImageId": "ami-0e1989e836322f58b",
+    "InstanceType": "t2.micro",
+    "KeyName": {
+     "Ref": "FruitstoreKeyPair"
+    },
+    "NetworkInterfaces": [
+     {
+      "AssociatePublicIpAddress": true,
+      "DeviceIndex": "0",
+      "GroupSet": [
+       {
+        "Ref": "FruitstoreSG"
+       }
+      ],
+      "SubnetId": {
+       "Ref": "PublicSubnet1"
+      }
+     }
+    ],
+    "Tags": []
+   },
+   "Type": "AWS::EC2::Instance"
+  },
+  "FruitstoreKeyPair": {
+   "Properties": {
+    "KeyName": "fruitstore-key-pair",
+    "Tags": []
+   },
+   "Type": "AWS::EC2::KeyPair"
+  },
+  "FruitstoreSG": {
+   "Properties": {
+    "GroupDescription": "Allow SSH and HTTP",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "FromPort": 22,
+      "IpProtocol": "tcp",
+      "ToPort": 22
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "Tags": [],
+    "VpcId": {
+     "Ref": "FruitstoreVPC"
+    }
+   },
+   "Type": "AWS::EC2::SecurityGroup"
+  },
+  "FruitstoreVPC": {
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "Tags": []
+   },
+   "Type": "AWS::EC2::VPC"
+  },
+  "PublicRouteTable": {
+   "Properties": {
+    "Tags": [],
+    "VpcId": {
+     "Ref": "FruitstoreVPC"
+    }
+   },
+   "Type": "AWS::EC2::RouteTable"
+  },
+  "PublicSubnet1": {
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Join": [
+      "",
+      [
+       "us-east-1",
+       "a"
+      ]
+     ]
+    },
+    "CidrBlock": "10.0.1.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [],
+    "VpcId": {
+     "Ref": "FruitstoreVPC"
+    }
+   },
+   "Type": "AWS::EC2::Subnet"
+  },
+  "SSMInstanceProfile": {
+   "Properties": {
+    "Path": "/",
+    "Roles": [
+     {
+      "Ref": "SSMRole"
+     }
+    ]
+   },
+   "Type": "AWS::IAM::InstanceProfile"
+  },
+  "SSMRole": {
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "sts:AssumeRole"
+       ],
+       "Effect": "Allow",
+       "Principal": {
+        "Service": [
+         "ec2.amazonaws.com"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Policies": [
+     {
+      "PolicyDocument": {
+       "Statement": [
+        {
+         "Action": [
+          "ssm:*",
+          "ec2messages:*",
+          "cloudwatch:PutMetricData",
+          "ec2:Describe*",
+          "logs:*"
+         ],
+         "Effect": "Allow",
+         "Resource": "*"
+        }
+       ],
+       "Version": "2012-10-17"
+      },
+      "PolicyName": "AllowSSM"
+     }
+    ],
+    "Tags": []
+   },
+   "Type": "AWS::IAM::Role"
+  },
+  "Subnet1RouteAssoc": {
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "PublicRouteTable"
+    },
+    "SubnetId": {
+     "Ref": "PublicSubnet1"
+    }
+   },
+   "Type": "AWS::EC2::SubnetRouteTableAssociation"
+  }
+ }
+}

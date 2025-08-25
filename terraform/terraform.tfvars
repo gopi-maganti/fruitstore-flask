@@ -4,7 +4,7 @@ vpc_cidr         = "10.0.0.0/16"
 
 public_key_path  = "/Users/gopikrishnamaganti/.ssh/id_rsa.pub"
 private_key_path = "/Users/gopikrishnamaganti/.ssh/id_rsa"
-ami_id           = "ami-08c40ec9ead489470"
+ami_id           = "ami-08a6efd148b1f7504"
 
 db_username      = "fruituser"
 db_password      = "SuperSecurePass123"
