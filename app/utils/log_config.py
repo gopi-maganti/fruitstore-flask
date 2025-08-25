@@ -1,5 +1,7 @@
 import logging
+
 import structlog
+
 from aws_utils.log_utils import get_cloudwatch_handler
 
 
@@ -14,11 +16,7 @@ def setup_logging():
     if cloudwatch_handler:
         handlers.append(cloudwatch_handler)
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(message)s",
-        handlers=handlers
-    )
+    logging.basicConfig(level=logging.INFO, format="%(message)s", handlers=handlers)
 
     structlog.configure(
         processors=[
@@ -27,7 +25,7 @@ def setup_logging():
             structlog.processors.add_log_level,
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
-            structlog.processors.JSONRenderer()
+            structlog.processors.JSONRenderer(),
         ],
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),

@@ -1,8 +1,9 @@
+from datetime import datetime
+from unittest.mock import MagicMock, patch
+
+from app import create_app, db
 from app.models.cart import Cart
 from app.models.fruit import Fruit
-from unittest.mock import patch, MagicMock
-from datetime import datetime
-from app import db, create_app
 
 
 def test_cart_to_dict():

@@ -1,13 +1,16 @@
-from unittest.mock import patch, MagicMock
-import pytest
 from datetime import datetime
-from app.services import fruit_service
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 from app.models.fruit import Fruit, FruitInfo
+from app.services import fruit_service
 
 
 @pytest.fixture(scope="module")
 def app_context():
     from app import create_app
+
     app = create_app()
     with app.app_context():
         yield
@@ -17,12 +20,15 @@ def app_context():
 # ✅ add_fruit_with_info
 # -------------------------------
 
+
 @patch("app.services.fruit_service.db.session.commit")
 @patch("app.services.fruit_service.db.session.flush")
 @patch("app.services.fruit_service.db.session.add")
 @patch("app.services.fruit_service.FruitInfo")
 @patch("app.services.fruit_service.Fruit")
-def test_add_fruit_with_info_success(mock_fruit, mock_fruit_info, mock_add, mock_flush, mock_commit, app_context):
+def test_add_fruit_with_info_success(
+    mock_fruit, mock_fruit_info, mock_add, mock_flush, mock_commit, app_context
+):
     mock_fruit_instance = MagicMock()
     mock_fruit_instance.fruit_id = 1
     mock_fruit_instance.exists.return_value = False
@@ -33,9 +39,15 @@ def test_add_fruit_with_info_success(mock_fruit, mock_fruit_info, mock_add, mock
     mock_fruit_info.return_value = mock_fruit_info_instance
 
     data = {
-        "name": "Apple", "color": "Red", "size": "M", "has_seeds": True,
-        "weight": 1.2, "price": 3.0, "total_quantity": 100,
-        "available_quantity": 100, "sell_by_date": datetime.utcnow()
+        "name": "Apple",
+        "color": "Red",
+        "size": "M",
+        "has_seeds": True,
+        "weight": 1.2,
+        "price": 3.0,
+        "total_quantity": 100,
+        "available_quantity": 100,
+        "sell_by_date": datetime.utcnow(),
     }
 
     fruit, info = fruit_service.add_fruit_with_info(data, "http://image.jpg")
@@ -51,9 +63,15 @@ def test_add_fruit_duplicate_fruit(mock_fruit, mock_rollback, app_context):
     mock_fruit.return_value = mock_fruit_instance
 
     data = {
-        "name": "Apple", "color": "Red", "size": "M", "has_seeds": True,
-        "weight": 1.2, "price": 3.0, "total_quantity": 100,
-        "available_quantity": 100, "sell_by_date": datetime.utcnow()
+        "name": "Apple",
+        "color": "Red",
+        "size": "M",
+        "has_seeds": True,
+        "weight": 1.2,
+        "price": 3.0,
+        "total_quantity": 100,
+        "available_quantity": 100,
+        "sell_by_date": datetime.utcnow(),
     }
 
     with pytest.raises(ValueError, match="already exists"):
@@ -63,15 +81,23 @@ def test_add_fruit_duplicate_fruit(mock_fruit, mock_rollback, app_context):
 @patch("app.services.fruit_service.db.session.rollback")
 @patch("app.services.fruit_service.db.session.flush", side_effect=Exception("fail"))
 @patch("app.services.fruit_service.Fruit")
-def test_add_fruit_with_info_db_failure(mock_fruit, mock_flush, mock_rollback, app_context):
+def test_add_fruit_with_info_db_failure(
+    mock_fruit, mock_flush, mock_rollback, app_context
+):
     fruit_mock = MagicMock()
     fruit_mock.exists.return_value = False
     mock_fruit.return_value = fruit_mock
 
     data = {
-        "name": "Pear", "color": "Green", "size": "S", "has_seeds": True,
-        "weight": 1.0, "price": 2.0, "total_quantity": 10,
-        "available_quantity": 10, "sell_by_date": datetime.utcnow()
+        "name": "Pear",
+        "color": "Green",
+        "size": "S",
+        "has_seeds": True,
+        "weight": 1.0,
+        "price": 2.0,
+        "total_quantity": 10,
+        "available_quantity": 10,
+        "sell_by_date": datetime.utcnow(),
     }
 
     with pytest.raises(Exception, match="fail"):
@@ -82,6 +108,7 @@ def test_add_fruit_with_info_db_failure(mock_fruit, mock_flush, mock_rollback, a
 # -------------------------------
 # ✅ get_all_fruits
 # -------------------------------
+
 
 @patch("app.services.fruit_service.FruitInfo.query")
 @patch("app.services.fruit_service.Fruit.query")
@@ -111,6 +138,7 @@ def test_get_all_fruits_returns_list(mock_fruit_query, mock_info_query, app_cont
 # -------------------------------
 # ✅ get_fruit_by_id
 # -------------------------------
+
 
 @patch("app.services.fruit_service.FruitInfo.query")
 @patch("app.services.fruit_service.Fruit.query")
@@ -152,10 +180,13 @@ def test_search_fruits_exception(mock_query, app_context):
 # ✅ update_fruit_info
 # -------------------------------
 
+
 @patch("app.services.fruit_service.db.session.commit")
 @patch("app.services.fruit_service.FruitInfo.query")
 @patch("app.services.fruit_service.Fruit.query")
-def test_update_fruit_info_success(mock_fruit_query, mock_info_query, mock_commit, app_context):
+def test_update_fruit_info_success(
+    mock_fruit_query, mock_info_query, mock_commit, app_context
+):
     mock_fruit = MagicMock()
     mock_info = MagicMock()
     mock_fruit_query.get.return_value = mock_fruit
@@ -170,14 +201,23 @@ def test_update_fruit_info_success(mock_fruit_query, mock_info_query, mock_commi
 
 from app.models.fruit import Fruit
 
+
 @patch("app.services.fruit_service.db.session.rollback")
 @patch("app.services.fruit_service.db.session.flush", side_effect=Exception("fail"))
 @patch("app.services.fruit_service.db.session.add")
-def test_add_fruit_with_info_db_failure(mock_add, mock_flush, mock_rollback, app_context):
+def test_add_fruit_with_info_db_failure(
+    mock_add, mock_flush, mock_rollback, app_context
+):
     data = {
-        "name": "Pear", "color": "Green", "size": "S", "has_seeds": True,
-        "weight": 1.0, "price": 2.0, "total_quantity": 10,
-        "available_quantity": 10, "sell_by_date": datetime.utcnow()
+        "name": "Pear",
+        "color": "Green",
+        "size": "S",
+        "has_seeds": True,
+        "weight": 1.0,
+        "price": 2.0,
+        "total_quantity": 10,
+        "available_quantity": 10,
+        "sell_by_date": datetime.utcnow(),
     }
 
     # Patch Fruit.exists to return False
@@ -192,6 +232,7 @@ def test_add_fruit_with_info_db_failure(mock_add, mock_flush, mock_rollback, app
 # ✅ delete_fruits
 # -------------------------------
 
+
 def test_delete_fruits_success(app_context):
     Cart = MagicMock()
     Order = MagicMock()
@@ -204,13 +245,17 @@ def test_delete_fruits_success(app_context):
     FruitInfo.query.filter_by.return_value.delete.return_value = 1
     Fruit.query.get.return_value = MagicMock()
 
-    with patch.dict("sys.modules", {
-        "app.models.cart": MagicMock(Cart=Cart),
-        "app.models.orders": MagicMock(Order=Order)
-    }), \
-         patch("app.services.fruit_service.FruitInfo", FruitInfo), \
-         patch("app.services.fruit_service.Fruit", Fruit), \
-         patch("app.services.fruit_service.db.session", session):
+    with patch.dict(
+        "sys.modules",
+        {
+            "app.models.cart": MagicMock(Cart=Cart),
+            "app.models.orders": MagicMock(Order=Order),
+        },
+    ), patch("app.services.fruit_service.FruitInfo", FruitInfo), patch(
+        "app.services.fruit_service.Fruit", Fruit
+    ), patch(
+        "app.services.fruit_service.db.session", session
+    ):
 
         result = fruit_service.delete_fruits([1])
         assert result == 1

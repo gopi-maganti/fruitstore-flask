@@ -1,4 +1,5 @@
 import os
+
 import watchtower
 
 
@@ -11,6 +12,7 @@ def get_cloudwatch_handler():
     watchtower.CloudWatchLogHandler or None
     """
     import boto3
+
     region = os.getenv("AWS_REGION", "us-east-1")
     boto3.setup_default_session(region_name=region)
     try:

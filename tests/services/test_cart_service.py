@@ -1,10 +1,12 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from app import create_app
-from app.services import cart_service
 from app.models.cart import Cart
 from app.models.fruit import FruitInfo
 from app.models.users import User
+from app.services import cart_service
 
 
 @pytest.fixture(scope="module")
@@ -13,9 +15,11 @@ def app_context():
     with app.app_context():
         yield
 
+
 # --------------------------------------
 # ✅ add_to_cart tests
 # --------------------------------------
+
 
 @patch("app.services.cart_service.FruitInfo.query")
 def test_add_to_cart_fruit_not_found(mock_fruit_query, app_context):
@@ -38,11 +42,15 @@ def test_add_to_cart_user_not_found(mock_fruit_query, mock_user_query, app_conte
         cart_service.add_to_cart(user_id=123, fruit_id=1, quantity=2)
 
 
-@patch("app.services.cart_service.db.session.commit", side_effect=Exception("DB failure"))
+@patch(
+    "app.services.cart_service.db.session.commit", side_effect=Exception("DB failure")
+)
 @patch("app.services.cart_service.db.session.add")
 @patch("app.services.cart_service.User.query")
 @patch("app.services.cart_service.FruitInfo.query")
-def test_add_to_cart_db_failure(mock_fruit_query, mock_user_query, mock_add, mock_commit, app_context):
+def test_add_to_cart_db_failure(
+    mock_fruit_query, mock_user_query, mock_add, mock_commit, app_context
+):
     fruit = MagicMock()
     fruit.price = 1.5
     fruit.info_id = 1
@@ -56,6 +64,7 @@ def test_add_to_cart_db_failure(mock_fruit_query, mock_user_query, mock_add, moc
 # --------------------------------------
 # ✅ get_cart_items_by_user tests
 # --------------------------------------
+
 
 @patch("app.services.cart_service.Cart.query")
 def test_get_cart_items_by_user_returns_list(mock_cart_query, app_context):
@@ -71,6 +80,7 @@ def test_get_cart_items_by_user_returns_list(mock_cart_query, app_context):
 # --------------------------------------
 # Update cart item tests
 # --------------------------------------
+
 
 @patch("app.services.cart_service.Cart.query")
 @patch("app.services.cart_service.db.session")
@@ -103,6 +113,7 @@ def test_update_cart_item_not_found(mock_cart_query, app_context):
 # ✅ delete_cart_item tests
 # --------------------------------------
 
+
 @patch("app.services.cart_service.Cart.query")
 @patch("app.services.cart_service.db.session")
 def test_delete_cart_item_not_found(mock_session, mock_cart_query):
@@ -125,6 +136,7 @@ def test_delete_cart_item_success(mock_session, mock_cart_query):
 # --------------------------------------
 # ✅ clear_cart_for_user tests
 # --------------------------------------
+
 
 @patch("app.services.cart_service.Cart.query")
 @patch("app.services.cart_service.db.session")

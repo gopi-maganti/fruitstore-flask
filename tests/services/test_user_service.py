@@ -1,12 +1,14 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from sqlalchemy.exc import SQLAlchemyError
-from app.services import user_service
+from unittest.mock import MagicMock, patch
 
+import pytest
+from sqlalchemy.exc import SQLAlchemyError
+
+from app.services import user_service
 
 # ----------------------------------------
 # ✅ Positive Test Cases
 # ----------------------------------------
+
 
 @patch("app.services.user_service.db.session.commit")
 @patch("app.services.user_service.db.session.add")
@@ -41,7 +43,6 @@ def test_get_user_by_id_found(mock_query, app):
         assert result.user_id == 1
 
 
-
 @patch("app.services.user_service.User.query.get")
 def test_get_user_by_id_not_found(mock_get, app):
     with app.app_context():
@@ -74,6 +75,7 @@ def test_delete_user_by_id_not_found(mock_get, app):
 # ----------------------------------------
 # ❌ Negative Test Cases
 # ----------------------------------------
+
 
 @patch("app.services.user_service.db.session.rollback")
 @patch("app.services.user_service.db.session.add")

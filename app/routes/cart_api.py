@@ -16,6 +16,7 @@ logger = get_logger("cart_routes")
 # Add Cart Item
 # -----------------------------------------------
 
+
 @cart_bp.route("/add", methods=["POST"])
 @swag_from("swagger_docs/cart/add_cart_item.yml")
 def add_cart_item():
@@ -24,7 +25,9 @@ def add_cart_item():
         logger.info("Cart add request received", data=data)
 
         validated = CartAddValidation(**data)
-        item = cart_service.add_to_cart(validated.user_id, validated.fruit_id, validated.quantity)
+        item = cart_service.add_to_cart(
+            validated.user_id, validated.fruit_id, validated.quantity
+        )
 
         return jsonify(item.as_dict()), 201
     except ValidationError as ve:
@@ -43,6 +46,7 @@ def add_cart_item():
 # -----------------------------------------------
 # Associate Cart with User
 # -----------------------------------------------
+
 
 @cart_bp.route("/associate-cart", methods=["POST"])
 @swag_from("swagger_docs/cart/associate_cart.yml")
@@ -64,12 +68,18 @@ def associate_cart():
     updated = Cart.query.filter_by(user_id=old_user_id).update({"user_id": new_user_id})
     db.session.commit()
     logger.info("Cart reassignment complete", updated=updated)
-    return jsonify({"message": f"{updated} cart items associated with user {new_user_id}"}), 200
+    return (
+        jsonify(
+            {"message": f"{updated} cart items associated with user {new_user_id}"}
+        ),
+        200,
+    )
 
 
 # -----------------------------------------------
 # Get Cart Items by User ID
 # -----------------------------------------------
+
 
 @cart_bp.route("/<string:user_id>", methods=["GET"])
 @swag_from("swagger_docs/cart/get_user_cart.yml")
@@ -93,6 +103,7 @@ def get_cart_items(user_id):
 # Update Cart Item
 # -----------------------------------------------
 
+
 @cart_bp.route("/update/<int:cart_id>", methods=["PUT"])
 @swag_from("swagger_docs/cart/update_cart_item.yml")
 def update_cart_item(cart_id):
@@ -112,7 +123,15 @@ def update_cart_item(cart_id):
 
         db.session.commit()
         logger.info("Cart item updated", cart_id=cart_item.cart_id)
-        return jsonify({"message": "Cart item updated successfully", "cart": cart_item.as_dict()}), 200
+        return (
+            jsonify(
+                {
+                    "message": "Cart item updated successfully",
+                    "cart": cart_item.as_dict(),
+                }
+            ),
+            200,
+        )
 
     except ValidationError as ve:
         logger.error("Validation error on update", cart_id=cart_id, errors=ve.errors())
@@ -125,6 +144,7 @@ def update_cart_item(cart_id):
 # -----------------------------------------------
 # Delete Cart Item
 # -----------------------------------------------
+
 
 @cart_bp.route("/delete/<int:cart_id>", methods=["DELETE"])
 @swag_from("swagger_docs/cart/delete_cart_item.yml")
@@ -143,9 +163,11 @@ def delete_cart_item(cart_id):
         logger.exception("Failed to delete cart item")
         return jsonify({"error": "Internal Server Error"}), 500
 
+
 # -----------------------------------------------
 # Clear User Cart
 # -----------------------------------------------
+
 
 @cart_bp.route("/clear/<int:user_id>", methods=["DELETE"])
 @swag_from("swagger_docs/cart/clear_user_cart.yml")

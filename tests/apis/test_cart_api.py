@@ -1,12 +1,19 @@
 import io
 import re
 import uuid
+from unittest.mock import MagicMock, patch
+
 import pytest
+
 from app.models.cart import Cart
-from unittest.mock import patch, MagicMock
 from app.routes.cart_api import cart_bp
 from app.services import cart_service
-from app.services.cart_service import add_to_cart, get_cart_items_by_user, delete_cart_item, clear_cart_for_user
+from app.services.cart_service import (
+    add_to_cart,
+    clear_cart_for_user,
+    delete_cart_item,
+    get_cart_items_by_user,
+)
 
 
 def add_user(client, name=None, email=None):
@@ -15,11 +22,9 @@ def add_user(client, name=None, email=None):
     email = email or f"user-{suffix}@example.com"
     phone = f"90000{int(suffix, 16) % 100000:05d}"
 
-    response = client.post("/user/add", json={
-        "name": name,
-        "email": email,
-        "phone_number": phone
-    })
+    response = client.post(
+        "/user/add", json={"name": name, "email": email, "phone_number": phone}
+    )
 
     # Helpful debug print in case of failure
     if response.status_code != 201:
@@ -29,7 +34,6 @@ def add_user(client, name=None, email=None):
     data = response.get_json()
 
     return response, data.get("user", {}).get("user_id")
-
 
 
 def add_fruit(client, name=None):
@@ -46,10 +50,14 @@ def add_fruit(client, name=None):
         "price": "10.0",
         "total_quantity": "50",
         "available_quantity": "50",
-        "sell_by_date": "2030-01-01"
+        "sell_by_date": "2030-01-01",
     }
 
-    response = client.post("/fruit/add", data={**fruit_data, "image": image}, content_type="multipart/form-data")
+    response = client.post(
+        "/fruit/add",
+        data={**fruit_data, "image": image},
+        content_type="multipart/form-data",
+    )
     assert response.status_code == 201
     data = response.get_json()
     return response, data["fruit"]["fruit_id"]
@@ -59,15 +67,14 @@ def add_fruit(client, name=None):
 # ✅ Positive Test Cases
 # -----------------------------
 
+
 def test_add_to_cart_success(client):
     _, user_id = add_user(client)
     _, fruit_id = add_fruit(client)
 
-    response = client.post("/cart/add", json={
-        "user_id": user_id,
-        "fruit_id": fruit_id,
-        "quantity": 3
-    })
+    response = client.post(
+        "/cart/add", json={"user_id": user_id, "fruit_id": fruit_id, "quantity": 3}
+    )
     assert response.status_code == 201
     assert response.get_json()
 
@@ -76,7 +83,9 @@ def test_get_cart_by_user_id_success(client):
     _, user_id = add_user(client)
     _, fruit_id = add_fruit(client)
 
-    client.post("/cart/add", json={"user_id": user_id, "fruit_id": fruit_id, "quantity": 1})
+    client.post(
+        "/cart/add", json={"user_id": user_id, "fruit_id": fruit_id, "quantity": 1}
+    )
     response = client.get(f"/cart/{user_id}")
     assert response.status_code == 200
     assert isinstance(response.get_json(), list)
@@ -88,12 +97,15 @@ def test_associate_cart_success(client, app):
         _, new_user_id = add_user(client, name="New")
         _, fruit_id = add_fruit(client)
 
-        client.post("/cart/add", json={"user_id": old_user_id, "fruit_id": fruit_id, "quantity": 2})
+        client.post(
+            "/cart/add",
+            json={"user_id": old_user_id, "fruit_id": fruit_id, "quantity": 2},
+        )
 
-        response = client.post("/cart/associate-cart", json={
-            "old_user_id": old_user_id,
-            "new_user_id": new_user_id
-        })
+        response = client.post(
+            "/cart/associate-cart",
+            json={"old_user_id": old_user_id, "new_user_id": new_user_id},
+        )
 
         assert response.status_code == 200
         assert f"user {new_user_id}".encode() in response.data
@@ -106,6 +118,7 @@ def test_associate_cart_success(client, app):
 # ❌ Negative Test Cases
 # -----------------------------
 
+
 def test_add_to_cart_missing_fields(client):
     response = client.post("/cart/add", json={})
     assert response.status_code == 400
@@ -114,11 +127,9 @@ def test_add_to_cart_missing_fields(client):
 
 def test_add_to_cart_invalid_fruit(client):
     _, user_id = add_user(client)
-    response = client.post("/cart/add", json={
-        "user_id": user_id,
-        "fruit_id": 9999,
-        "quantity": 1
-    })
+    response = client.post(
+        "/cart/add", json={"user_id": user_id, "fruit_id": 9999, "quantity": 1}
+    )
     assert response.status_code == 404
     assert b"Fruit not found" in response.data
 
@@ -140,7 +151,9 @@ def test_clear_cart_user_not_found(client):
     assert response.status_code == 404
     assert b"No cart items to delete" in response.data
 
+
 # --- FIXED MOCK TARGETS (patches where they're used, not where defined) ---
+
 
 def test_get_cart_by_user_id_not_found(client):
     with patch.object(cart_service, "get_cart_items_by_user", return_value=None):

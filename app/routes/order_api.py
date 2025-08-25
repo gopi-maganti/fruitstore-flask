@@ -13,6 +13,7 @@ logger = get_logger("order_routes")
 # Place Order
 # -----------------------------------------------
 
+
 @order_bp.route("/place/<int:user_id>", methods=["POST"])
 @swag_from("swagger_docs/order/place_order.yml")
 def place_order(user_id: int):
@@ -35,6 +36,7 @@ def place_order(user_id: int):
 # Get Order by User ID
 # -----------------------------------------------
 
+
 @order_bp.route("/history/<int:user_id>", methods=["GET"])
 @swag_from("swagger_docs/order/get_order_history.yml")
 def get_order_history(user_id):
@@ -51,6 +53,7 @@ def get_order_history(user_id):
 # -----------------------------------------------
 # Get All Orders
 # -----------------------------------------------
+
 
 @order_bp.route("/all", methods=["GET"])
 @swag_from("swagger_docs/order/get_all_orders.yml")

@@ -1,6 +1,6 @@
 import os
-from datetime import datetime
 import uuid
+from datetime import datetime
 
 from flasgger import swag_from
 from flask import Blueprint, jsonify, request
@@ -16,6 +16,7 @@ logger = get_logger("fruit_routes")
 # -----------------------------------------------
 # Add Fruit and FruitInfo
 # -----------------------------------------------
+
 
 @fruit_bp.route("/add", methods=["POST"])
 @swag_from("swagger_docs/fruit/add_fruit.yml")
@@ -34,11 +35,13 @@ def add_fruit_with_info():
             file=file,
             bucket=os.getenv("S3_BUCKET_NAME"),
             region=os.getenv("AWS_REGION"),
-            key=f"fruit-images/{uuid.uuid4().hex}_{filename}"
+            key=f"fruit-images/{uuid.uuid4().hex}_{filename}",
         )
 
         form_data = request.form.to_dict()
-        form_data["has_seeds"] = request.form.get("has_seeds", "false").lower() == "true"
+        form_data["has_seeds"] = (
+            request.form.get("has_seeds", "false").lower() == "true"
+        )
 
         try:
             form_data["weight"] = float(form_data["weight"])
@@ -47,7 +50,9 @@ def add_fruit_with_info():
             form_data["available_quantity"] = int(
                 request.form.get("available_quantity") or form_data["total_quantity"]
             )
-            form_data["sell_by_date"] = datetime.strptime(form_data["sell_by_date"], "%Y-%m-%d").date()
+            form_data["sell_by_date"] = datetime.strptime(
+                form_data["sell_by_date"], "%Y-%m-%d"
+            ).date()
         except Exception as e:
             logger.warning("Invalid numeric or date field", extra={"error": str(e)})
             return jsonify({"error": "Invalid field", "details": str(e)}), 400
@@ -57,11 +62,16 @@ def add_fruit_with_info():
 
         fruit, fruit_info = fruit_service.add_fruit_with_info(form_data, image_url)
 
-        return jsonify({
-            "message": "Fruit and FruitInfo added successfully",
-            "fruit": fruit.to_dict(),
-            "fruit_info_id": fruit_info.info_id
-        }), 201
+        return (
+            jsonify(
+                {
+                    "message": "Fruit and FruitInfo added successfully",
+                    "fruit": fruit.to_dict(),
+                    "fruit_info_id": fruit_info.info_id,
+                }
+            ),
+            201,
+        )
 
     except ValueError as ve:
         logger.warning("Business validation failed", extra={"reason": str(ve)})
@@ -74,6 +84,7 @@ def add_fruit_with_info():
 # -----------------------------------------------
 # Get All Fruits
 # -----------------------------------------------
+
 
 @fruit_bp.route("/all", methods=["GET"])
 @swag_from("swagger_docs/fruit/get_all_fruits.yml")
@@ -89,6 +100,7 @@ def get_all_fruits():
 # -----------------------------------------------
 # Get Fruit by ID
 # -----------------------------------------------
+
 
 @fruit_bp.route("/<int:fruit_id>", methods=["GET"])
 @swag_from("swagger_docs/fruit/get_fruit_by_id.yml")
@@ -106,6 +118,7 @@ def get_fruit_by_id(fruit_id):
 # -----------------------------------------------
 # Search Fruits
 # -----------------------------------------------
+
 
 @fruit_bp.route("/search", methods=["GET"])
 @swag_from("swagger_docs/fruit/search_fruits.yml")
@@ -126,6 +139,7 @@ def search_fruits():
 # Update Fruit Info
 # -----------------------------------------------
 
+
 @fruit_bp.route("/update/<int:fruit_id>", methods=["PUT"])
 @swag_from("swagger_docs/fruit/update_fruit_info.yml")
 def update_fruit_info(fruit_id):
@@ -135,17 +149,22 @@ def update_fruit_info(fruit_id):
         if not updated_info:
             return jsonify({"error": "Fruit not found"}), 404
 
-        return jsonify({
-            "message": "Fruit information updated successfully",
-            "fruit_info": {
-                "fruit_id": fruit_id,
-                "weight": updated_info.weight,
-                "price": updated_info.price,
-                "total_quantity": updated_info.total_quantity,
-                "available_quantity": updated_info.available_quantity,
-                "sell_by_date": updated_info.sell_by_date.isoformat()
-            }
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": "Fruit information updated successfully",
+                    "fruit_info": {
+                        "fruit_id": fruit_id,
+                        "weight": updated_info.weight,
+                        "price": updated_info.price,
+                        "total_quantity": updated_info.total_quantity,
+                        "available_quantity": updated_info.available_quantity,
+                        "sell_by_date": updated_info.sell_by_date.isoformat(),
+                    },
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.exception("Failed to update fruit info")
@@ -155,6 +174,7 @@ def update_fruit_info(fruit_id):
 # -----------------------------------------------
 # Delete Fruits
 # -----------------------------------------------
+
 
 @fruit_bp.route("/delete", methods=["DELETE"])
 @fruit_bp.route("/delete/<int:fruit_id>", methods=["DELETE"])
@@ -174,9 +194,14 @@ def delete_fruits(fruit_id=None):
         if deleted == 0:
             return jsonify({"error": "No fruits found to delete"}), 404
 
-        return jsonify({
-            "message": f"Deleted {deleted} fruit{'s' if deleted > 1 else ''} successfully"
-        }), 200
+        return (
+            jsonify(
+                {
+                    "message": f"Deleted {deleted} fruit{'s' if deleted > 1 else ''} successfully"
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.exception("Failed to delete fruits")

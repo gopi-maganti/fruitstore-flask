@@ -9,6 +9,7 @@ from app.utils.log_config import get_logger
 
 logger = get_logger("fruit_service")
 
+
 def add_fruit_with_info(data: dict, image_url: str) -> tuple[Fruit, FruitInfo]:
     """
     Add a new fruit and its associated FruitInfo.
@@ -49,7 +50,7 @@ def add_fruit_with_info(data: dict, image_url: str) -> tuple[Fruit, FruitInfo]:
             total_quantity=data["total_quantity"],
             available_quantity=data["available_quantity"],
             sell_by_date=data["sell_by_date"],
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
 
         if fruit_info.exists():
@@ -83,15 +84,17 @@ def get_all_fruits() -> List[Dict[str, Any]]:
     for fruit in fruits:
         info = next((i for i in fruit_infos if i.fruit_id == fruit.fruit_id), None)
         if info:
-            result.append({
-                **fruit.to_dict(),
-                "info_id": info.info_id,
-                "weight": info.weight,
-                "price": info.price,
-                "total_quantity": info.total_quantity,
-                "available_quantity": info.available_quantity,
-                "sell_by_date": info.sell_by_date.isoformat()
-            })
+            result.append(
+                {
+                    **fruit.to_dict(),
+                    "info_id": info.info_id,
+                    "weight": info.weight,
+                    "price": info.price,
+                    "total_quantity": info.total_quantity,
+                    "available_quantity": info.available_quantity,
+                    "sell_by_date": info.sell_by_date.isoformat(),
+                }
+            )
 
     logger.info("Fetched all fruits", count=len(result))
     return result
@@ -125,7 +128,7 @@ def get_fruit_by_id(fruit_id: int) -> Dict[str, Any] | None:
         "price": info.price,
         "total_quantity": info.total_quantity,
         "available_quantity": info.available_quantity,
-        "sell_by_date": info.sell_by_date.isoformat()
+        "sell_by_date": info.sell_by_date.isoformat(),
     }
 
 
@@ -149,19 +152,23 @@ def search_fruits(filters: dict) -> List[Dict[str, Any]]:
         value = filters.get("value")
         if value:
             val = float(value)
-            query = query.filter(or_(
-                FruitInfo.price == val,
-                FruitInfo.weight == val,
-                FruitInfo.total_quantity == val,
-                FruitInfo.available_quantity == val
-            ))
+            query = query.filter(
+                or_(
+                    FruitInfo.price == val,
+                    FruitInfo.weight == val,
+                    FruitInfo.total_quantity == val,
+                    FruitInfo.available_quantity == val,
+                )
+            )
 
         search_term = filters.get("search", "").strip()
         if search_term:
-            query = query.filter(or_(
-                Fruit.name.ilike(f"%{search_term}%"),
-                Fruit.color.ilike(f"%{search_term}%")
-            ))
+            query = query.filter(
+                or_(
+                    Fruit.name.ilike(f"%{search_term}%"),
+                    Fruit.color.ilike(f"%{search_term}%"),
+                )
+            )
 
         for field in ["price", "weight", "total_quantity", "available_quantity"]:
             min_val = filters.get(f"{field}_min")
@@ -174,15 +181,18 @@ def search_fruits(filters: dict) -> List[Dict[str, Any]]:
                 query = query.filter(col <= float(max_val))
 
         infos = query.all()
-        result = [{
-            **info.fruit.to_dict(),
-            "info_id": info.info_id,
-            "weight": info.weight,
-            "price": info.price,
-            "total_quantity": info.total_quantity,
-            "available_quantity": info.available_quantity,
-            "sell_by_date": info.sell_by_date.isoformat()
-        } for info in infos]
+        result = [
+            {
+                **info.fruit.to_dict(),
+                "info_id": info.info_id,
+                "weight": info.weight,
+                "price": info.price,
+                "total_quantity": info.total_quantity,
+                "available_quantity": info.available_quantity,
+                "sell_by_date": info.sell_by_date.isoformat(),
+            }
+            for info in infos
+        ]
 
         logger.info("Search results returned", count=len(result))
         return result

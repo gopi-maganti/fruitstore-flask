@@ -9,6 +9,7 @@ from app.utils.log_config import get_logger
 
 logger = get_logger("order_service")
 
+
 def place_order(user_id: int, cart_ids: list[int]) -> dict:
     """
     Create an order from a user's cart.
@@ -55,7 +56,7 @@ def place_order(user_id: int, cart_ids: list[int]) -> dict:
                 info_id=item.info_id,
                 quantity=item.quantity,
                 price_by_fruit=fruit_info.price,
-                order_date=datetime.utcnow()
+                order_date=datetime.utcnow(),
             )
             db.session.add(order)
             created_orders.append(order)
@@ -63,10 +64,12 @@ def place_order(user_id: int, cart_ids: list[int]) -> dict:
             db.session.delete(item)
 
         db.session.commit()
-        logger.info("Order placed", user_id=user_id, item_count=len(created_orders), total=total)
+        logger.info(
+            "Order placed", user_id=user_id, item_count=len(created_orders), total=total
+        )
         return {
             "order_total": round(total, 2),
-            "order_items": [o.as_dict() for o in created_orders]
+            "order_items": [o.as_dict() for o in created_orders],
         }
 
     except Exception as e:
@@ -87,7 +90,9 @@ def get_order_history(user_id: int) -> list:
     -------
     list
     """
-    orders = Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc()).all()
+    orders = (
+        Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc()).all()
+    )
     logger.info("Fetched order history", user_id=user_id, count=len(orders))
     return [o.as_dict() for o in orders]
 

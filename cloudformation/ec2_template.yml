@@ -13,7 +13,7 @@ Resources:
     Properties:
       InstanceType: t3.micro
       KeyName: !Ref KeyName
-      ImageId: ami-0c02fb55956c7d316
+      ImageId: ami-08a6efd148b1f7504
       SubnetId: !ImportValue FruitstoreSubnet1Id
       SecurityGroupIds:
         - !ImportValue FruitstoreSecurityGroupId

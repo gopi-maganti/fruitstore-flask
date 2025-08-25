@@ -7,87 +7,38 @@ on:
         description: 'Release tag to deploy'
         required: true
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.tag }}
-          fetch-depth: 0
 
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.0
+      - name: Read EC2 Config from cloudformation.json
+        id: parse_config
+        run: |
+          CONFIG=$(jq '.EC2Config' cloudformation.json)
+          echo "CONFIG=$CONFIG" >> $GITHUB_ENV
+          echo "AMI_ID=$(echo $CONFIG | jq -r '.AmiId')" >> $GITHUB_ENV
+          echo "INSTANCE_TYPE=$(echo $CONFIG | jq -r '.InstanceType')" >> $GITHUB_ENV
+          echo "KEY_NAME=$(echo $CONFIG | jq -r '.KeyName')" >> $GITHUB_ENV
+          echo "REGION=$(echo $CONFIG | jq -r '.Region')" >> $GITHUB_ENV
+          echo "TAG_VALUE=$(echo $CONFIG | jq -r '.TagValue')" >> $GITHUB_ENV
+
+      - name: Call EC2 Deployment Action
+        uses: gopi-maganti/AWS-EC2.Workflow/.github/actions/deploy
         with:
-          host: ${{ secrets.HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          timeout: 90m
-          command_timeout: 60m
-          script: |
-            set -e
-
-            echo "✅ Navigating to home directory"
-            cd /home/ec2-user
-
-            echo "🧹 Cleaning previous pyenv installation"
-            rm -rf "$HOME/.pyenv"
-
-            echo "📦 Installing dependencies for Python build"
-            sudo yum groupinstall -y "Development Tools" || true
-            sudo yum install -y \
-              gcc zlib-devel bzip2 bzip2-devel readline-devel sqlite sqlite-devel \
-              openssl11 openssl11-devel libffi-devel wget make git \
-              tk-devel gdbm-devel xz-devel ncurses-devel patch \
-              libuuid-devel libtirpc-devel curl-devel \
-              pkgconfig
-
-            echo "📥 Installing pyenv"
-            curl https://pyenv.run | bash
-            export PYENV_ROOT="$HOME/.pyenv"
-            export PATH="$PYENV_ROOT/bin:$PATH"
-            eval "$(pyenv init -)"
-            eval "$(pyenv virtualenv-init -)"
-
-            echo "🐍 Installing Python 3.12.2 via pyenv"
-            export CFLAGS="-I/usr/include/openssl11"
-            export LDFLAGS="-L/usr/lib64/openssl11 -Wl,-rpath=/usr/lib64/openssl11"
-            export PKG_CONFIG_PATH="/usr/lib64/openssl11/pkgconfig"
-            export LD_LIBRARY_PATH="$PYENV_ROOT/versions/3.12.2/lib:$LD_LIBRARY_PATH"
-            pyenv install -s 3.12.2
-            pyenv global 3.12.2
-
-            echo "✅ Python version: $(pyenv which python)"
-
-            echo "🧬 Cloning repo if not exists"
-            if [ ! -d "fruitstore-flask" ]; then
-              git clone https://github.com/gopi-maganti/fruitstore-flask.git
-            fi
-
-            cd fruitstore-flask
-
-            echo "🌿 Checking out release tag: ${{ github.event.inputs.tag }}"
-            git fetch --all --tags
-            git checkout "refs/tags/${{ github.event.inputs.tag }}"
-
-            echo "🐍 Creating virtual environment with Python 3.12.2"
-            "$PYENV_ROOT/versions/3.12.2/bin/python" -m venv venv
-            source venv/bin/activate
-            export PATH="$(pwd)/venv/bin:$PATH"
-            export PYTHONPATH="$(pwd)/venv/lib/python3.12/site-packages"
-
-            echo "📍 Python: $(which python)"
-            echo "📍 Pip: $(which pip)"
-            ./venv/bin/python --version
-
-            echo "♻️ Cleaning existing packages in venv"
-            pip freeze | xargs pip uninstall -y || true
-
-            echo "📦 Installing dependencies"
-            pip install --upgrade pip
-            pip install -r requirements.txt
-
-            echo "🔎 Verifying boto3 inside venv"
-            ./venv/bin/python -c
+          region: ${{ env.REGION }}
+          ami-id: ${{ env.AMI_ID }}
+          instance-type: ${{ env.INSTANCE_TYPE }}
+          key-name: ${{ env.KEY_NAME }}
+          tag-value: ${{ env.TAG_VALUE }}
+          ssh-key: ${{ secrets.EC2_SSH_KEY }}
+          script-path: scripts/setup.sh

@@ -9,13 +9,16 @@ from app.validations.user_validation import UserValidation
 user_bp = Blueprint("user_bp", __name__)
 logger = get_logger("user")
 
+
 @user_bp.route("/add", methods=["POST"])
 @swag_from("swagger_docs/user/add_user.yml")
 def add_user():
     try:
         data = request.get_json()
         validated = UserValidation(**data)
-        user = user_service.create_user(validated.name, validated.email, validated.phone_number)
+        user = user_service.create_user(
+            validated.name, validated.email, validated.phone_number
+        )
         logger.info("User created", user_id=user.user_id)
         return jsonify({"message": "User created", "user": user.to_dict()}), 201
     except ValidationError as ve:
