@@ -38,7 +38,5 @@ jobs:
           region: ${{ env.REGION }}
           ami-id: ${{ env.AMI_ID }}
           instance-type: ${{ env.INSTANCE_TYPE }}
-          key-name: ${{ env.KEY_NAME }}
           tag-value: ${{ env.TAG_VALUE }}
-          ssh-key: ${{ secrets.EC2_SSH_KEY }}
           script-path: scripts/setup.sh
