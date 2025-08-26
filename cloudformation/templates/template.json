@@ -5,7 +5,7 @@
   "PublicIP": {
    "Description": "Public IP of EC2",
    "Value": {
-    "Ref": "FruitstoreInstance"
+    "Ref": "MyInstance"
    }
   }
  },
@@ -20,10 +20,10 @@
   "AttachGateway": {
    "Properties": {
     "InternetGatewayId": {
-     "Ref": "FruitstoreIGW"
+     "Ref": "MyIGW"
     },
     "VpcId": {
-     "Ref": "FruitstoreVPC"
+     "Ref": "MyVPC"
     }
    },
    "Type": "AWS::EC2::VPCGatewayAttachment"
@@ -32,7 +32,7 @@
    "Properties": {
     "DestinationCidrBlock": "0.0.0.0/0",
     "GatewayId": {
-     "Ref": "FruitstoreIGW"
+     "Ref": "MyIGW"
     },
     "RouteTableId": {
      "Ref": "PublicRouteTable"
@@ -40,13 +40,13 @@
    },
    "Type": "AWS::EC2::Route"
   },
-  "FruitstoreIGW": {
+  "MyIGW": {
    "Properties": {
     "Tags": []
    },
    "Type": "AWS::EC2::InternetGateway"
   },
-  "FruitstoreInstance": {
+  "MyInstance": {
    "Properties": {
     "IamInstanceProfile": {
      "Ref": "SSMInstanceProfile"
@@ -56,7 +56,7 @@
      "Ref": "InstanceType"
     },
     "KeyName": {
-     "Ref": "FruitstoreKeyPair"
+     "Ref": "MyKeyPair"
     },
     "NetworkInterfaces": [
      {
@@ -64,7 +64,7 @@
       "DeviceIndex": "0",
       "GroupSet": [
        {
-        "Ref": "FruitstoreSG"
+        "Ref": "MySG"
        }
       ],
       "SubnetId": {
@@ -76,14 +76,14 @@
    },
    "Type": "AWS::EC2::Instance"
   },
-  "FruitstoreKeyPair": {
+  "MyKeyPair": {
    "Properties": {
-    "KeyName": "fruitstore-key-pair",
+    "KeyName": "My-key-pair",
     "Tags": []
    },
    "Type": "AWS::EC2::KeyPair"
   },
-  "FruitstoreSG": {
+  "MySG": {
    "Properties": {
     "GroupDescription": "Allow SSH and HTTP",
     "SecurityGroupIngress": [
@@ -102,12 +102,12 @@
     ],
     "Tags": [],
     "VpcId": {
-     "Ref": "FruitstoreVPC"
+     "Ref": "MyVPC"
     }
    },
    "Type": "AWS::EC2::SecurityGroup"
   },
-  "FruitstoreVPC": {
+  "MyVPC": {
    "Properties": {
     "CidrBlock": "10.0.0.0/16",
     "EnableDnsHostnames": true,
@@ -120,7 +120,7 @@
    "Properties": {
     "Tags": [],
     "VpcId": {
-     "Ref": "FruitstoreVPC"
+     "Ref": "MyVPC"
     }
    },
    "Type": "AWS::EC2::RouteTable"
@@ -140,7 +140,7 @@
     "MapPublicIpOnLaunch": true,
     "Tags": [],
     "VpcId": {
-     "Ref": "FruitstoreVPC"
+     "Ref": "MyVPC"
     }
    },
    "Type": "AWS::EC2::Subnet"

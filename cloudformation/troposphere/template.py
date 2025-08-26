@@ -52,7 +52,7 @@ if os.path.exists(tags_file):
 # ===== VPC =====
 vpc = template.add_resource(
     ec2.VPC(
-        "FruitstoreVPC",
+        "MyVPC",
         CidrBlock="10.0.0.0/16",
         EnableDnsSupport=True,
         EnableDnsHostnames=True,
@@ -61,7 +61,7 @@ vpc = template.add_resource(
 )
 
 # ===== Internet Gateway & Route Table =====
-igw = template.add_resource(ec2.InternetGateway("FruitstoreIGW", Tags=Tags(*common_tags)))
+igw = template.add_resource(ec2.InternetGateway("MyIGW", Tags=Tags(*common_tags)))
 
 template.add_resource(ec2.VPCGatewayAttachment(
     "AttachGateway",
@@ -100,7 +100,7 @@ template.add_resource(ec2.SubnetRouteTableAssociation(
 
 # ===== Security Group =====
 security_group = template.add_resource(ec2.SecurityGroup(
-    "FruitstoreSG",
+    "MySG",
     GroupDescription="Allow SSH and HTTP",
     VpcId=Ref(vpc),
     SecurityGroupIngress=[
@@ -112,8 +112,8 @@ security_group = template.add_resource(ec2.SecurityGroup(
 
 # ===== EC2 Key Pair (optional - no private key exposed) =====
 key_pair = template.add_resource(ec2.KeyPair(
-    "FruitstoreKeyPair",
-    KeyName="fruitstore-key-pair",
+    "MyKeyPair",
+    KeyName="My-key-pair",
     Tags=Tags(*common_tags),
 ))
 
@@ -156,7 +156,7 @@ instance_profile = template.add_resource(InstanceProfile(
 
 # ===== EC2 Instance =====
 ec2_instance = template.add_resource(ec2.Instance(
-    "FruitstoreInstance",
+    "MyInstance",
     ImageId="ami-0e1989e836322f58b",
     InstanceType=Ref(instance_type_param),
     KeyName=Ref(key_pair),
