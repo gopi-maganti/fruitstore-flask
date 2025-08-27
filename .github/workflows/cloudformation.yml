@@ -21,7 +21,7 @@ jobs:
       - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \
-            --stack-name fruitstore-ec2-stack \
+            --stack-name fruits-ec2-stack \
             --template-file cloudformation/templates/template.json \
             --capabilities CAPABILITY_NAMED_IAM \
             --parameter-overrides \
