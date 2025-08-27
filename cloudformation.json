@@ -1,5 +1,5 @@
 {
-  "StackName": "fruitstore-ec2-stack",
+  "StackName": "fruits-ec2-stack",
   "TemplateBodyFile": "cloudformation/templates/template.json",
   "Capabilities": ["CAPABILITY_NAMED_IAM"],
   "Parameters": {
