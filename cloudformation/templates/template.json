@@ -1,6 +1,6 @@
 {
  "AWSTemplateFormatVersion": "2010-09-09",
- "Description": "EC2 infrastructure with SSM, KeyPair, IAM",
+ "Description": "EC2 infrastructure with SSM, IAM, Security, and VPC",
  "Outputs": {
   "PublicIP": {
    "Description": "Public IP of EC2",
@@ -55,9 +55,7 @@
     "InstanceType": {
      "Ref": "InstanceType"
     },
-    "KeyName": {
-     "Ref": "FruitsKeyPair"
-    },
+    "KeyName": "Fruits-key-pair",
     "NetworkInterfaces": [
      {
       "AssociatePublicIpAddress": true,
@@ -75,13 +73,6 @@
     "Tags": []
    },
    "Type": "AWS::EC2::Instance"
-  },
-  "FruitsKeyPair": {
-   "Properties": {
-    "KeyName": "Fruits-key-pair",
-    "Tags": []
-   },
-   "Type": "AWS::EC2::KeyPair"
   },
   "FruitsSG": {
    "Properties": {

@@ -26,6 +26,5 @@ jobs:
             --capabilities CAPABILITY_NAMED_IAM \
             --parameter-overrides \
               InstanceType=t2.micro \
-              KeyName=Fruits-key-pair \
             --tags Project=FruitStore Environment=Dev \
             --no-fail-on-empty-changeset
