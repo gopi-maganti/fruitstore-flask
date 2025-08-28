@@ -13,7 +13,7 @@ parameters = {}
 # ===== Initialize Template =====
 template = Template()
 template.set_version("2010-09-09")
-template.set_description("EC2 infrastructure with SSM, KeyPair, IAM")
+template.set_description("EC2 infrastructure with SSM, IAM, Security, and VPC")
 
 # ===== Add Required Parameters =====
 instance_type_param = template.add_parameter(Parameter(
@@ -50,17 +50,15 @@ if os.path.exists(tags_file):
         common_tags = json.load(f)
 
 # ===== VPC =====
-vpc = template.add_resource(
-    ec2.VPC(
-        "FruitsVPC",
-        CidrBlock="10.0.0.0/16",
-        EnableDnsSupport=True,
-        EnableDnsHostnames=True,
-        Tags=Tags(*common_tags),
-    )
-)
+vpc = template.add_resource(ec2.VPC(
+    "FruitsVPC",
+    CidrBlock="10.0.0.0/16",
+    EnableDnsSupport=True,
+    EnableDnsHostnames=True,
+    Tags=Tags(*common_tags),
+))
 
-# ===== Internet Gateway & Route Table =====
+# ===== Internet Gateway & Routing =====
 igw = template.add_resource(ec2.InternetGateway("FruitsIGW", Tags=Tags(*common_tags)))
 
 template.add_resource(ec2.VPCGatewayAttachment(
@@ -72,7 +70,7 @@ template.add_resource(ec2.VPCGatewayAttachment(
 route_table = template.add_resource(ec2.RouteTable(
     "PublicRouteTable",
     VpcId=Ref(vpc),
-    Tags=Tags(*common_tags)
+    Tags=Tags(*common_tags),
 ))
 
 template.add_resource(ec2.Route(
@@ -82,7 +80,7 @@ template.add_resource(ec2.Route(
     RouteTableId=Ref(route_table),
 ))
 
-# ===== Subnets =====
+# ===== Subnet =====
 subnet1 = template.add_resource(ec2.Subnet(
     "PublicSubnet1",
     VpcId=Ref(vpc),
@@ -95,7 +93,7 @@ subnet1 = template.add_resource(ec2.Subnet(
 template.add_resource(ec2.SubnetRouteTableAssociation(
     "Subnet1RouteAssoc",
     SubnetId=Ref(subnet1),
-    RouteTableId=Ref(route_table)
+    RouteTableId=Ref(route_table),
 ))
 
 # ===== Security Group =====
@@ -110,14 +108,7 @@ security_group = template.add_resource(ec2.SecurityGroup(
     Tags=Tags(*common_tags),
 ))
 
-# ===== EC2 Key Pair (optional - no private key exposed) =====
-key_pair = template.add_resource(ec2.KeyPair(
-    "FruitsKeyPair",
-    KeyName="Fruits-key-pair",
-    Tags=Tags(*common_tags),
-))
-
-# ===== IAM Role & Instance Profile for SSM =====
+# ===== IAM Role for SSM =====
 ssm_role = template.add_resource(Role(
     "SSMRole",
     AssumeRolePolicyDocument={
@@ -159,7 +150,7 @@ ec2_instance = template.add_resource(ec2.Instance(
     "FruitsInstance",
     ImageId="ami-0e1989e836322f58b",
     InstanceType=Ref(instance_type_param),
-    KeyName=Ref(key_pair),
+    KeyName="Fruits-key-pair",  # <-- Only reference key name (DO NOT manage as resource)
     IamInstanceProfile=Ref(instance_profile),
     NetworkInterfaces=[
         ec2.NetworkInterfaceProperty(
@@ -172,7 +163,7 @@ ec2_instance = template.add_resource(ec2.Instance(
     Tags=Tags(*common_tags),
 ))
 
-# ===== Output Public IP =====
+# ===== Output =====
 template.add_output(Output(
     "PublicIP",
     Description="Public IP of EC2",
